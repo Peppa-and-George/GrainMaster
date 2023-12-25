@@ -8,40 +8,56 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from routers.user import router as user_router
 from models.base import Token
 from schema.curd import CURD
+from routers.product import product_router
 
 from journal import log
-from auth import jwt, JWTError, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
+from auth import (
+    jwt,
+    JWTError,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    SECRET_KEY,
+    ALGORITHM,
+)
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 curd = CURD()
 
 app = FastAPI(title="backend", version="1.0.0")
-app.include_router(user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user")
+app.include_router(
+    user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
+)
+# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
+app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
 
 
 async def sieve_middleware(request: Request, call_next):
     s_time = time.perf_counter()
 
-    try:    # 为了防止fastapi因为奇怪的逻辑挂掉
+    try:  # 为了防止fastapi因为奇怪的逻辑挂掉
         response = await call_next(request)
         e_time = time.perf_counter()
         c_time = e_time - s_time
         cost = "%.5fs" % c_time if c_time < 0 else "%.5fms" % (c_time * 1000)
-        log.debug(f"{request.client.host}:{request.client.port} | {response.status_code} | {cost} | {request.method} | {request.url}")
+        log.debug(
+            f"{request.client.host}:{request.client.port} | {response.status_code} | {cost} | {request.method} | {request.url}"
+        )
         return response
-    except Exception:   # noqa
+    except Exception:  # noqa
         e_time = time.perf_counter()
         c_time = e_time - s_time
         cost = "%.5fs" % c_time if c_time < 0 else "%.5fms" % (c_time * 1000)
-        log.info(f"{request.client.host}:{request.client.port} | {500} | {cost} | {request.method} | {request.url}")
+        log.info(
+            f"{request.client.host}:{request.client.port} | {500} | {cost} | {request.method} | {request.url}"
+        )
         exc_type, exc_value, exc_traceback = sys.exc_info()
         traceback.print_tb(exc_traceback)
         log.error("\n" + exc_type.__name__ + " " + str(exc_value))
         return Response(f"{exc_type.__name__} {exc_value}", status_code=500)
 
 
-app.middleware('http')(sieve_middleware)
+app.middleware("http")(sieve_middleware)
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):  # 验证token
@@ -82,7 +98,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 def runserver(workers):
     import uvicorn
+
     uvicorn.run(
-        "app:app", host="0.0.0.0", port=10001, workers=workers, reload=True,
+        "app:app",
+        host="0.0.0.0",
+        port=10001,
+        workers=workers,
+        reload=True,
         # log_level="critical"
     )

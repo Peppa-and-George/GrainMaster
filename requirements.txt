@@ -1,2 +1,10 @@
-passlib[bcrypt]
+passlib[bcrypt]~=1.7.4
 python-jose[cryptography]
+SQLAlchemy~=2.0.23
+python-multipart
+colorlog~=6.8.0
+fastapi~=0.105.0
+pydantic~=2.5.2
+alembic~=1.13.1
+fastapi
+Pillow~=10.1.0

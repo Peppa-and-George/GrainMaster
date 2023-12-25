@@ -7,12 +7,6 @@ class Token(BaseModel):
     token_type: str
 
 
-class ResStatus(BaseModel):
-    code: int = 0
-    message: str = "success"
-    data: Any = None
-
-
 class User(BaseModel):
     name: str
     phone_number: int

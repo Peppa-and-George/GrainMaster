@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from schema.curd import CURD
-from models.base import User, ResStatus, UserInfo, UserRestPasswd
+from models.base import User, UserInfo, UserRestPasswd
+from models.common import ResStatus
 from auth import get_base64_password
 
 
@@ -17,7 +18,9 @@ async def users():
 
 @router.post("/create_user", response_model=ResStatus, description="创建用户")
 async def create_user(user: UserInfo):
-    curd.user.create_user(user.name, user.phone_number, get_base64_password(user.password))
+    curd.user.create_user(
+        user.name, user.phone_number, get_base64_password(user.password)
+    )
     return {}
 
 

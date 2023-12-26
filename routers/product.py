@@ -13,6 +13,7 @@ from models.product_model import (
     AddProductResponseModel,
     AddProductsResponseModel,
     UpdateProductModel,
+    QueryProductByNameModel,
 )
 from schema.product import (
     query_products,
@@ -22,6 +23,7 @@ from schema.product import (
     add_product,
     update_product,
     delete_product_by_id,
+    query_product_by_name,
 )
 from dependency.upload_image import save_image, save_images, update_image, delete_image
 
@@ -29,14 +31,18 @@ product_router = APIRouter(prefix="/product", tags=["产品管理"])
 
 
 @product_router.get(
-    "/get_products", description="获取所有商品信息", response_model=QueryProductsResponseModel
+    "/get_products", summary="批量获取商品信息", response_model=QueryProductsResponseModel
 )
 async def get_products_api(
     query_model: QueryProductsModel = Depends(),
 ):
     """
-    获取所有商品信息
-    :param query_model: 查询参数
+    # 批量获取商品信息
+    ## params
+    - **page**: 页码, 从1开始, 可选
+    - **page_size**: 分页大小，默认20，范围1-100, 可选
+    - **orderField**: 排序字段, 默认为"id", 可选
+    - **order**: 排序方式, asc: 升序, desc: 降序, 默认升序， 可选
     """
     try:
         res = query_products(query_model)
@@ -52,14 +58,49 @@ async def get_products_api(
 
 
 @product_router.get(
-    "/get_product_by_id", description="根据id获取商品信息", response_model=ResStatus
+    "/get_product_by_name", summary="根据商品名称获取商品信息", response_model=ResStatus
+)
+async def get_product_by_name_api(params: QueryProductByNameModel = Depends()):
+    """
+    # 根据商品名称获取商品信息
+    ## params
+    - **productName**: 商品名称
+    """
+    try:
+        res = query_product_by_name(params)
+        if res is None:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=ResStatus(
+                    **{"code": 1, "message": "查询失败, 该商品不存在"}
+                ).model_dump(),
+            )
+        product_data = QueryProductsResponseModel.model_validate(
+            res, from_attributes=True
+        )
+        product_data.message = "查询成功"
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, content=product_data.model_dump()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@product_router.get(
+    "/get_product_by_id", summary="根据id获取商品信息", response_model=ResStatus
 )
 async def get_product_api(
     product_id: int = Query(..., description="商品id", alias="productId"),
 ):
     """
-    根据id获取商品信息
-    :param product_id: 商品id
+    # 根据id获取商品信息
+    ## params
+    - **productName**: 商品名称
+    - **fuzzy**: 是否模糊查询, 默认False, 可选
+    - **page**: 页码, 从1开始, 可选
+    - **page_size**: 分页大小，默认20，范围1-100, 可选
+    - **orderField**: 排序字段, 默认为"id", 可选
+    - **order**: 排序方式, asc: 升序, desc: 降序, 默认升序， 可选
     """
     try:
         res = query_product_by_id(product_id)
@@ -83,14 +124,19 @@ async def get_product_api(
 
 @product_router.post(
     "/add_product",
-    description="添加商品",
+    summary="添加商品",
     response_model=AddProductResponseModel,
-    dependencies=[Depends(save_image)],
 )
 async def add_product_api(product: AddProductModel = Depends(save_image)):
     """
-    添加商品
-    :param product: 商品信息
+    # 添加商品
+    ## params
+    - **productName**: 商品名称，字符串， 必填
+    - **introduction**: 商品介绍，字符串，可选
+    - **price**: 价格，浮点数，必填
+    - **unit**: 规格，浮点数，必填
+    - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
+    - **synchronize**: 是否同步，布尔值，默认值false可选
     """
     try:
         add_product(Product(**product.model_dump()))
@@ -105,14 +151,20 @@ async def add_product_api(product: AddProductModel = Depends(save_image)):
 
 
 @product_router.post(
-    "/add_products", description="批量添加商品", response_model=AddProductsResponseModel
+    "/add_products", summary="批量添加商品", response_model=AddProductsResponseModel
 )
 async def add_products_api(
     products: List[AddProductModel] = Depends(save_images),
 ):
     """
-    批量添加商品
-    :param products: 商品信息
+    # 批量添加商品
+    ## params
+    - **productName**: 商品名称，字符串， 必填
+    - **introduction**: 商品介绍，字符串，可选
+    - **price**: 价格，浮点数，必填
+    - **unit**: 规格，浮点数，必填
+    - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
+    - **synchronize**: 是否同步，布尔值，默认值false可选
     """
     try:
         add_products([Product(**product.model_dump()) for product in products])
@@ -126,13 +178,20 @@ async def add_products_api(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@product_router.put("/update_product", description="更新商品")
+@product_router.put("/update_product", summary="更新商品")
 async def update_product_api(
     query: UpdateProductModel = Depends(update_image),
 ):
     """
-    更新商品
-    :param query: 商品信息
+    # 更新商品
+    - **id**: 商品ID, 整型，必填
+    - **product**: 商品信息
+        - **productName**: 商品名称，字符串， 必填
+        - **introduction**: 商品介绍，字符串，可选
+        - **price**: 价格，浮点数，必填
+        - **unit**: 规格，浮点数，必填
+        - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
+        - **synchronize**: 是否同步，布尔值，默认值false可选
     """
     try:
         updated_row = update_product(
@@ -157,13 +216,13 @@ async def update_product_api(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@product_router.delete("/delete_product", description="删除商品")
+@product_router.delete("/delete_product", summary="删除商品")
 async def delete_product_api(
     product_id: int = Depends(delete_image),
 ):
     """
-    删除商品
-    :param product_id: 商品id
+    # 删除商品
+    - **productId**: 商品ID, 整型，必填
     """
     try:
         deleted_row = delete_product_by_id(product_id)

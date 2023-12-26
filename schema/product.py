@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Integer, DateTime, Boolean, desc, asc, FL
 
 from sqlalchemy.orm import declarative_base
 
-from models.product_model import QueryProductsModel
+from models.product_model import QueryProductsModel, QueryProductByNameModel
 from schema.database import engine
 from sqlalchemy.orm import sessionmaker
 
@@ -84,6 +84,39 @@ def query_product_by_id(product_id: int) -> Type[Product] | None:
     with Session() as session:
         product = session.query(Product).filter_by(id=product_id).first()
         return product
+
+
+def query_product_by_name(params: QueryProductByNameModel) -> dict:
+    """
+    根据name查询商品
+    :param params: 查询参数
+    """
+    fuzzy = params.fuzzy
+    with Session() as session:
+        query = session.query(Product)
+        if fuzzy:
+            query = query.filter(Product.name.like(f"%{params.product_name}%"))
+        else:
+            query = query.filter_by(name=params.product_name)
+        total = query.count()
+        query = query.order_by(
+            desc(getattr(Product, params.order_field))
+            if params.order == "desc"
+            else asc(getattr(Product, params.order_field))
+        )
+        query = query.offset((params.page - 1) * params.page_size).limit(
+            params.page_size
+        )
+
+        products = query.all()
+        return {
+            "total": total,
+            "data": products,
+            "page": params.page,
+            "page_size": params.page_size,
+            "order_field": params.order_field,
+            "order": params.order,
+        }
 
 
 def add_product(product: Product) -> None:

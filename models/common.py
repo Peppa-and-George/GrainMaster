@@ -26,7 +26,9 @@ class PaginationModel(BaseModel):
 
 
 class SortModel(BaseModel):
-    order_field: str = Field(default="id", title="排序字段", description="排序字段")
+    order_field: str = Field(
+        default="id", title="排序字段", description="排序字段", alias="orderField"
+    )
     order: Literal["asc", "desc"] = Field(
         default="asc", title="排序方式", description="排序方式, asc: 升序, desc: 降序, 默认升序"
     )

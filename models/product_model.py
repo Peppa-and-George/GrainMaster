@@ -33,8 +33,9 @@ class ProductSchema(BaseModel):
     def serializer_datetime(self, v, _field_info: SerializationInfo):
         return v.strftime("%Y-%m-%d %H:%M:%S")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
 
 
 # ----------- Response Models -----------
@@ -72,9 +73,25 @@ class QueryProductsModel(CommonQueryParm):
     )
 
 
+class QueryProductByNameModel(CommonQueryParm):
+    product_name: str = Field(
+        title="商品名称",
+        description="商品名称",
+        max_length=50,
+        examples=["test product"],
+        alias="productName",
+    )
+
+    fuzzy: bool = Field(
+        default=False,
+        title="是否模糊查询",
+        description="是否模糊查询, 默认False",
+        alias="fuzzy",
+    )
+
+
 class AddProductModel(BaseModel):
     name: str = Field(
-        default=None,
         title="商品名称",
         description="商品名称",
         max_length=50,
@@ -82,7 +99,7 @@ class AddProductModel(BaseModel):
         alias="productName",
     )
     introduction: str = Field(
-        default=None,
+        default="",
         title="商品介绍",
         description="商品介绍",
         max_length=255,
@@ -90,7 +107,7 @@ class AddProductModel(BaseModel):
     )
     price: float = Field(title="价格", description="价格", examples=[1, 2, 3, 4, 5])
     unit: float = Field(title="单位", description="单位", examples=[1, 2, 3, 4, 5])
-    icon: str = Field(title="图标", description="图标", examples=["test icon"])
+    icon: str = Field(title="图标", description="图标")
     synchronize: bool = Field(
         default=False, title="是否异步", description="是否异步", alias="synchronize"
     )

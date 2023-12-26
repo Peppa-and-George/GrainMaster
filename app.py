@@ -20,7 +20,6 @@ from auth import (
     ALGORITHM,
 )
 
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 curd = CURD()
 
@@ -28,8 +27,8 @@ app = FastAPI(title="backend", version="1.0.0")
 app.include_router(
     user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
 )
-# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
 app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
+# app.include_router(product_router, tags=["产品管理"])
 
 
 async def sieve_middleware(request: Request, call_next):
@@ -102,7 +101,7 @@ def runserver(workers):
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=10001,
+        port=8080,
         workers=workers,
         reload=True,
         # log_level="critical"

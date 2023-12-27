@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
 from models.common import ResStatus
-from models.product_model import (
+from models.product import (
     QueryProductsResponseModel,
     QueryProductsModel,
     ProductSchema,

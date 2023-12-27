@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, Integer, DateTime, Boolean, desc, asc, FL
 
 from sqlalchemy.orm import declarative_base
 
-from models.product_model import QueryProductsModel, QueryProductByNameModel
+from models.product import QueryProductsModel, QueryProductByNameModel
 from schema.database import engine
 from sqlalchemy.orm import sessionmaker
 

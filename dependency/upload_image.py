@@ -3,7 +3,7 @@ import uuid
 from base64 import b64decode
 from typing import List
 
-from models.product_model import AddProductModel, UpdateProductModel
+from models.product import AddProductModel, UpdateProductModel
 from fastapi import HTTPException
 
 from config import PRODUCT_DIR

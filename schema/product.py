@@ -6,6 +6,7 @@ from sqlalchemy import Column, String, Integer, DateTime, Boolean, desc, asc, FL
 from sqlalchemy.orm import declarative_base
 
 from models.product import QueryProductsModel, QueryProductByNameModel
+from schema.common import batch_query
 from schema.database import engine
 from sqlalchemy.orm import sessionmaker
 
@@ -18,15 +19,12 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True, nullable=False, comment="产品名称", name="name")
-    introduction = Column(
-        String, index=True, nullable=False, comment="产品介绍", name="introduction"
-    )
+    introduction = Column(String, nullable=False, comment="产品介绍", name="introduction")
     price = Column(FLOAT, nullable=False, comment="价格", name="price")
-    unit = Column(FLOAT, index=True, nullable=False, comment="规格(L)", name="unit")
-    icon = Column(String, index=True, nullable=False, comment="产品图片路径", name="icon")
+    unit = Column(FLOAT, nullable=False, comment="规格(L)", name="unit")
+    icon = Column(String, nullable=False, comment="产品图片路径", name="icon")
     synchronize = Column(
         Boolean,
-        index=True,
         nullable=False,
         comment="是否同步小程序",
         default=False,
@@ -50,30 +48,40 @@ def query_products(params: QueryProductsModel) -> dict:
     分页查询查询所有商品
     :param params: 查询参数
     """
+    query, total = batch_query(Product, params)
+    products = query.all()
+    return {
+        "total": total,
+        "data": products,
+        "page": params.page,
+        "page_size": params.page_size,
+        "order_field": params.order_field,
+        "order": params.order,
+    }
 
-    if params.order_field not in Product.__table__.columns.keys():
-        raise ValueError("order_field参数错误, 不存在该字段")
-
-    with Session() as session:
-        query = session.query(Product)
-        total = query.count()
-        query = query.order_by(
-            desc(getattr(Product, params.order_field))
-            if params.order == "desc"
-            else asc(getattr(Product, params.order_field))
-        )
-        query = query.offset((params.page - 1) * params.page_size).limit(
-            params.page_size
-        )
-        products = query.all()
-        return {
-            "total": total,
-            "data": products,
-            "page": params.page,
-            "page_size": params.page_size,
-            "order_field": params.order_field,
-            "order": params.order,
-        }
+    # if params.order_field not in Product.__table__.columns.keys():
+    #     raise ValueError("order_field参数错误, 不存在该字段")
+    #
+    # with Session() as session:
+    #     query = session.query(Product)
+    #     total = query.count()
+    #     query = query.order_by(
+    #         desc(getattr(Product, params.order_field))
+    #         if params.order == "desc"
+    #         else asc(getattr(Product, params.order_field))
+    #     )
+    #     query = query.offset((params.page - 1) * params.page_size).limit(
+    #         params.page_size
+    #     )
+    #     products = query.all()
+    #     return {
+    #         "total": total,
+    #         "data": products,
+    #         "page": params.page,
+    #         "page_size": params.page_size,
+    #         "order_field": params.order_field,
+    #         "order": params.order,
+    #     }
 
 
 def query_product_by_id(product_id: int) -> Type[Product] | None:
@@ -98,20 +106,10 @@ def query_product_by_name(params: QueryProductByNameModel) -> dict:
             query = query.filter(Product.name.like(f"%{params.product_name}%"))
         else:
             query = query.filter_by(name=params.product_name)
-        total = query.count()
-        query = query.order_by(
-            desc(getattr(Product, params.order_field))
-            if params.order == "desc"
-            else asc(getattr(Product, params.order_field))
-        )
-        query = query.offset((params.page - 1) * params.page_size).limit(
-            params.page_size
-        )
-
-        products = query.all()
+        query, total = batch_query(Product, params, query)
         return {
             "total": total,
-            "data": products,
+            "data": query.all(),
             "page": params.page,
             "page_size": params.page_size,
             "order_field": params.order_field,

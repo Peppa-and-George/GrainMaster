@@ -49,7 +49,6 @@ async def get_products_api(
         products_data = QueryProductsResponseModel.model_validate(
             res, from_attributes=True
         )
-        products_data.message = "查询成功"
         return JSONResponse(
             status_code=status.HTTP_200_OK, content=products_data.model_dump()
         )
@@ -78,7 +77,6 @@ async def get_product_by_name_api(params: QueryProductByNameModel = Depends()):
         product_data = QueryProductsResponseModel.model_validate(
             res, from_attributes=True
         )
-        product_data.message = "查询成功"
         return JSONResponse(
             status_code=status.HTTP_200_OK, content=product_data.model_dump()
         )

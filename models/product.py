@@ -3,7 +3,7 @@ from pydantic_core.core_schema import ValidationInfo, SerializationInfo
 from typing import List
 from datetime import datetime
 
-from models.common import CommonQueryParm, ResStatus
+from models.common import CommonQueryParm, ResStatus, BatchQueryResponseModel
 
 
 class ProductSchema(BaseModel):
@@ -39,16 +39,8 @@ class ProductSchema(BaseModel):
 
 
 # ----------- Response Models -----------
-class QueryProductsResponseModel(CommonQueryParm, ResStatus):
-    total: int
+class QueryProductsResponseModel(BatchQueryResponseModel):
     data: List[ProductSchema]
-
-    @field_validator("total")
-    @classmethod
-    def check_total_field(cls, v, field_info: ValidationInfo):
-        if v < 0:
-            raise ValueError(f"{field_info.field_name}参数错误, 不能小于0")
-        return v
 
     model_config = ConfigDict(
         from_attributes=True,

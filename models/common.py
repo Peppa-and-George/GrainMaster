@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, field_validator, Field, ConfigDict
 from typing import Literal, Any
 
 from pydantic_core.core_schema import ValidationInfo
@@ -24,6 +24,10 @@ class PaginationModel(BaseModel):
             raise ValueError(f"{field_info.field_name}参数错误, 不能大于100")
         return v
 
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
 
 class SortModel(BaseModel):
     order_field: str = Field(
@@ -33,15 +37,34 @@ class SortModel(BaseModel):
         default="asc", title="排序方式", description="排序方式, asc: 升序, desc: 降序, 默认升序"
     )
 
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
 
 class ResStatus(BaseModel):
     code: int = Field(default=0, title="状态码", description="状态码, 0: 成功, 1: 失败")
     message: str = Field(default="Successful", title="状态信息", description="状态信息")
     data: Any = Field(default=None, title="返回数据", description="返回数据")
 
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
 
 class CommonQueryParm(PaginationModel, SortModel):
-    pass
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
+class BatchQueryResponseModel(CommonQueryParm):
+    total: int
+    data: list[Any]
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
 
 
 if __name__ == "__main__":

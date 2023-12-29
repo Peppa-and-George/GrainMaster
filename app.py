@@ -5,10 +5,12 @@ from datetime import timedelta
 
 from fastapi import FastAPI, Response, Request, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from routers.user import router as user_router
+from fastapi.staticfiles import StaticFiles
 from models.base import Token
 from schema.curd import CURD
+from routers.user import router as user_router
 from routers.product import product_router
+from routers.location import location_router
 
 from journal import log
 from auth import (
@@ -19,6 +21,7 @@ from auth import (
     SECRET_KEY,
     ALGORITHM,
 )
+from config import IMAGE_DIR
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 curd = CURD()
@@ -27,8 +30,12 @@ app = FastAPI(title="backend", version="1.0.0")
 app.include_router(
     user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
 )
-app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
-# app.include_router(product_router, tags=["产品管理"])
+# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
+app.include_router(product_router, tags=["产品管理"])
+# app.include_router(file_router, dependencies=[Depends(oauth2_scheme)])
+app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
+# app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
+app.include_router(location_router)
 
 
 async def sieve_middleware(request: Request, call_next):

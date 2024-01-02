@@ -63,16 +63,16 @@ async def add_location_api(params: LocationNecessaryFields = Body(...)):
     - **longitude**: 经度, 必填
     - **latitude**: 纬度, 必填
     """
-    res = add_location(params)
-    if not res:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content=ResStatus(**{"code": 1, "message": "添加失败, 该位置已存在"}).model_dump(),
-        )
-    else:
+    try:
+        add_location(params)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=ResStatus(**{"code": 0, "message": "添加成功"}).model_dump(),
+        )
+    except Exception as e:
+        raise JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=ResStatus(**{"code": 1, "message": str(e)}).model_dump(),
         )
 
 

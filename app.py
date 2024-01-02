@@ -11,6 +11,7 @@ from schema.curd import CURD
 from routers.user import router as user_router
 from routers.product import product_router
 from routers.location import location_router
+from routers.camera import camera_router
 
 from journal import log
 from auth import (
@@ -30,12 +31,14 @@ app = FastAPI(title="backend", version="1.0.0")
 app.include_router(
     user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
 )
-# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
-app.include_router(product_router, tags=["产品管理"])
+app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
+# app.include_router(product_router, tags=["产品管理"])
 # app.include_router(file_router, dependencies=[Depends(oauth2_scheme)])
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
-# app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
-app.include_router(location_router)
+app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
+# app.include_router(location_router)
+app.include_router(camera_router, dependencies=[Depends(oauth2_scheme)])
+# app.include_router(camera_router)
 
 
 async def sieve_middleware(request: Request, call_next):

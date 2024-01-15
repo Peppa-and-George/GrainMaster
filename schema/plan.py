@@ -49,6 +49,20 @@ class PlantOperate(Base):
 
     name = Column(String(50), nullable=False)
 
+    operate_value = relationship("PlantOperateValue", backref="operate")
+
+    create_time = Column(DateTime, default=datetime.now, comment="创建时间", name="create_time")
+    update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间", name="update_time")
+
+
+class PlanOperateValue(Base):
+    __tablename__ = 'operate_value'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    operate_id = Column(Integer, ForeignKey('operate.id'))
+
+    image_str = Column(Text, nullable=False, comment="图片", name="image_str")
+    # todo 视频回放
+    status = Column(String(50), nullable=False, comment="状态", name="status")
     create_time = Column(DateTime, default=datetime.now, comment="创建时间", name="create_time")
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间", name="update_time")
 

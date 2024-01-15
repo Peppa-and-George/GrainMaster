@@ -28,11 +28,6 @@ class Plan(Base):
     create_time = Column(DateTime, default=datetime.now, comment="创建时间", name="create_time")
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间", name="update_time")
 
-    plant = relationship("PlantSegment", backref="plan")
-    transport = relationship("TransportSegment", backref="plan")
-    warehouse = relationship("WarehouseSegment", backref="plan")
-    logistics = relationship("LogisticSegment", backref="plan")
-
 
 class PlantSegment(Base):
     __tablename__ = 'segment'

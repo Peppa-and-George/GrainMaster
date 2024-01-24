@@ -1,7 +1,8 @@
 from schema.database import engine
-from schema.user import User
+from schema.tables import User
 from sqlalchemy.orm import sessionmaker
 from auth import verify_password, get_base64_password
+
 
 class CURD:
     def __init__(self):

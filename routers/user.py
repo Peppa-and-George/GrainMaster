@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from schema.curd import CURD
 from models.base import User, UserInfo, UserRestPasswd
-from models.common import ResStatus
 from auth import get_base64_password
 
 
@@ -9,14 +8,14 @@ curd = CURD()
 router = APIRouter()
 
 
-@router.get("/get_users_info", response_model=ResStatus, description="获取所有用户信息")
+@router.get("/get_users_info", description="获取所有用户信息")
 async def users():
     user = curd.user.get_users_info()
     res = [{"name": i.name, "phone_number": i.phone_number} for i in user]
     return {"data": res}
 
 
-@router.post("/create_user", response_model=ResStatus, description="创建用户")
+@router.post("/create_user", description="创建用户")
 async def create_user(user: UserInfo):
     curd.user.create_user(
         user.name, user.phone_number, get_base64_password(user.password)
@@ -24,7 +23,7 @@ async def create_user(user: UserInfo):
     return {}
 
 
-@router.post("/edit_user", response_model=ResStatus, description="编辑用户")
+@router.post("/edit_user", description="编辑用户")
 async def edit_user(user: User):
     u = curd.user.get_user(user.name)
     if not u:
@@ -36,7 +35,7 @@ async def edit_user(user: User):
     return {}
 
 
-@router.post("/reset_password", response_model=ResStatus, description="重置密码")
+@router.post("/reset_password", description="重置密码")
 def reset_password(user: UserRestPasswd):
     u = curd.user.get_user(user.name)
     if not u:

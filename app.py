@@ -10,9 +10,9 @@ from models.base import Token
 from schema.curd import CURD
 from routers.user import router as user_router
 from routers.product import product_router
+from routers.plan import plan_router
 from routers.location import location_router
-from routers.camera import camera_router
-
+from routers.client import client_router
 from journal import log
 from auth import (
     jwt,
@@ -31,14 +31,16 @@ app = FastAPI(title="backend", version="1.0.0")
 app.include_router(
     user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
 )
-app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)])
-# app.include_router(product_router, tags=["产品管理"])
+# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)], prefix="/product")
+app.include_router(product_router, tags=["产品管理"], prefix="/product")
 # app.include_router(file_router, dependencies=[Depends(oauth2_scheme)])
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
-app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
-# app.include_router(location_router)
-app.include_router(camera_router, dependencies=[Depends(oauth2_scheme)])
+# app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
+app.include_router(location_router, tags=["位置管理"], prefix="/location")
+# app.include_router(camera_router, dependencies=[Depends(oauth2_scheme)])
 # app.include_router(camera_router)
+app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
+app.include_router(client_router, tags=["客户管理"], prefix="/client")
 
 
 async def sieve_middleware(request: Request, call_next):
@@ -111,7 +113,7 @@ def runserver(workers):
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8080,
+        port=8081,
         workers=workers,
         reload=True,
         # log_level="critical"

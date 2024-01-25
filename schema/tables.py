@@ -29,18 +29,25 @@ from schema.database import Base
 #     Column("total", Float, comment="总价", name="total", nullable=False),
 # )
 
-relationship_privilege_client = Table(
-    "client_privilege",
-    Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("client_id", Integer, ForeignKey("client.id"), comment="客户id"),
-    Column("privilege_id", Integer, ForeignKey("privilege.id"), comment="权益id"),
-    Column(DATETIME, comment="过期时间", name="expired_date"),
-    Column(DATETIME, comment="生效时间", name="effective_time"),
-    Column(Boolean, comment="是否生效", name="status"),
-    Column(DATETIME, comment="使用时间", name="use_time"),
-    Column(Boolean, comment="是否可用", name="usable"),
-)
+# relationship_privilege_client = Table(
+#     "client_privilege",
+#     Base.metadata,
+#     Column("id", Integer, primary_key=True, autoincrement=True),
+#     Column(
+#         "privilege_number",
+#         String(32),
+#         comment="权益编号",
+#         nullable=False,
+#         unique=True,
+#     ),
+#     Column("client_id", Integer, ForeignKey("client.id"), comment="客户id"),
+#     Column("privilege_id", Integer, ForeignKey("privilege.id"), comment="权益id"),
+#     Column(DATETIME, comment="过期时间", name="expired_date"),
+#     Column(DATETIME, comment="生效时间", name="effective_time"),
+#     Column(Boolean, comment="是否生效", name="status"),
+#     Column(DATETIME, comment="使用时间", name="use_time"),
+#     Column(Boolean, comment="是否可用", name="usable"),
+# )
 
 
 class User(Base):
@@ -109,8 +116,10 @@ class Camera(Base):
 class Privilege(Base):
     __tablename__ = "privilege"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(32), nullable=False, comment="权益名称", name="name")
+    name = Column(String(32), nullable=False, comment="权益名称", name="name", unique=True)
+    privilege_type = Column(String(32), comment="权益类型", name="type")
     description = Column(String(250), comment="权益描述", name="description")
+    deleted = Column(Boolean, default=False, comment="权益是否删除")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -123,10 +132,8 @@ class Privilege(Base):
         name="update_time",
     )
 
-    clients: Mapped[List["Client"]] = relationship(
-        secondary=relationship_privilege_client,
-        lazy="dynamic",
-        back_populates="privileges",
+    clients: Mapped[List["ClientPrivilege"]] = relationship(
+        "ClientPrivilege", back_populates="privilege"
     )
 
 
@@ -135,10 +142,12 @@ class Client(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(32), nullable=False, comment="客户类型", name="type")
 
-    account = Column(String(32), nullable=False, comment="账号", name="account")
+    account = Column(
+        String(32), nullable=False, comment="账号", name="account", unique=True
+    )
     name = Column(String(32), nullable=False, comment="账号名", name="name")
     activate = Column(
-        Boolean, nullable=False, default=False, comment="激活状态", name="status"
+        Boolean, nullable=False, default=False, comment="激活状态", name="activate"
     )
     category = Column(String(32), comment="客户类型", name="category")
 
@@ -157,10 +166,8 @@ class Client(Base):
     )
     is_deleted = Column(Boolean, comment="是否已删除", name="is_deleted")
 
-    privileges: Mapped[List[Privilege]] = relationship(
-        secondary=relationship_privilege_client,
-        lazy="dynamic",
-        back_populates="clients",
+    privileges: Mapped[List["ClientPrivilege"]] = relationship(
+        "ClientPrivilege", back_populates="client"
     )
     addresses: Mapped[List["Address"]] = relationship(
         "Address",
@@ -174,13 +181,52 @@ class Client(Base):
     )
 
 
+class ClientPrivilege(Base):
+    __tablename__ = "client_privilege"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(ForeignKey("client.id", ondelete="CASCADE"), comment="客户")
+    privilege_id = Column(ForeignKey("privilege.id", ondelete="CASCADE"), comment="权益")
+
+    effective_time = Column(
+        DateTime, comment="生效时间", name="effective_time", nullable=False
+    )
+    expired_date = Column(DateTime, comment="过期时间", name="expired_date", nullable=False)
+    privilege_number = Column(
+        String(32),
+        comment="权益编号",
+        nullable=False,
+        unique=True,
+        name="privilege_number",
+    )
+    use_time = Column(DateTime, comment="使用时间", name="use_time")
+    usable = Column(Boolean, comment="是否可用", name="usable", default=True)
+
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        comment="更新时间",
+        name="update_time",
+        onupdate=datetime.now,
+    )
+
+    client: Mapped["Client"] = relationship(
+        "Client", back_populates="privileges", foreign_keys=[client_id]
+    )
+    privilege: Mapped["Privilege"] = relationship(
+        "Privilege", back_populates="clients", foreign_keys=[privilege_id]
+    )
+
+
 class Address(Base):
     __tablename__ = "address"
     id = Column(Integer, primary_key=True, autoincrement=True)
     client_id = Column(ForeignKey("client.id", ondelete="CASCADE"), comment="客户")
 
     name = Column(Text, nullable=False, comment="收货人", name="name")
-    phone_num = Column(Integer, nullable=False, comment="手机号", name="phone_num")
+    phone_num = Column(String(32), nullable=False, comment="手机号", name="phone_num")
     region = Column(Text, nullable=False, comment="地区", name="region")
     detail_address = Column(Text, nullable=False, comment="地址", name="detail_address")
 

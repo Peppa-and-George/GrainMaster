@@ -83,14 +83,14 @@ class PlanSchema(BaseModel):
 
 class AddressSchema(BaseModel):
     id: int = Field(description="地址id")
-    client_id: str = Field(description="客户id")
+    client_id: int = Field(description="客户id")
     name: str = Field(description="客户名称")
-    phone_number: int = Field(description="手机号")
+    phone_num: str = Field(description="手机号")
     region: str = Field(description="地区")
-    address: str = Field(description="地址")
+    detail_address: str = Field(description="地址")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
-    client: Union["ClientSchema"] = Field(description="客户信息")
+    # client: Union["ClientSchema"] = Field(description="客户信息")
 
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
@@ -113,6 +113,46 @@ class ClientSchema(BaseModel):
     addresses: Union[List[AddressSchema]] = Field(description="地址列表", default=[])
 
     @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PrivilegeSchema(BaseModel):
+    id: int = Field(description="权限ID")
+    name: str = Field(description="权限名称")
+    privilege_type: str = Field(description="权限类型")
+    description: str = Field(description="权限描述")
+    deleted: bool = Field(description="权益是否删除")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ClientPrivilegeRelationSchema(BaseModel):
+    id: int = Field(description="客户权限关系ID")
+    privilege_number: str = Field(description="权益编号")
+    client_id: int = Field(description="客户ID")
+    privilege_id: int = Field(description="权限ID")
+    expired_date: datetime = Field(description="过期时间")
+    effective_time: datetime = Field(description="生效时间")
+    use_time: datetime | None = Field(description="使用时间")
+    usable: bool = Field(description="是否使用")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    client: Union[ClientSchema] = Field(description="客户信息")
+    privilege: Union[PrivilegeSchema] = Field(description="权益信息")
+
+    @field_serializer(
+        "create_time", "update_time", "use_time", "expired_date", "effective_time"
+    )
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 

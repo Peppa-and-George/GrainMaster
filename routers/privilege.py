@@ -13,7 +13,7 @@ from schema.database import SessionLocal
 privilege_router = APIRouter()
 
 
-@privilege_router.get("/get_privileges", description="获取权限列表")
+@privilege_router.get("/get_privileges", description="获取权限列表", summary="获取权限列表")
 async def get_privileges(
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
@@ -41,7 +41,9 @@ async def get_privileges(
         )
 
 
-@privilege_router.get("/get_privilege_client_relationship", description="获取客户的权益")
+@privilege_router.get(
+    "/get_privilege_client_relationship", description="获取客户的权益", summary="获取客户的权益"
+)
 async def get_privilege_client_relationship(
     client_name: str = Query("", description="客户名称"),
     privilege_number: str = Query("", description="权益编号"),
@@ -97,7 +99,7 @@ async def get_privilege_client_relationship(
         )
 
 
-@privilege_router.get("/use_privilege_by_id", description="使用权益")
+@privilege_router.get("/use_privilege_by_id", description="使用权益", summary="使用权益")
 async def use_privilege_by_id(
     privilege_id: int = Query(..., description="权益ID"),
 ):
@@ -126,7 +128,9 @@ async def use_privilege_by_id(
         )
 
 
-@privilege_router.get("/use_privilege_by_name", description="通过编号使用权益")
+@privilege_router.get(
+    "/use_privilege_by_name", description="通过编号使用权益", summary="通过编号使用权益"
+)
 async def use_privilege_by_name(
     privilege_number: str = Query(..., description="权益编号"),
 ):
@@ -155,7 +159,9 @@ async def use_privilege_by_name(
         )
 
 
-@privilege_router.post("/add_privilege_client_relationship", description="给客户添加权益")
+@privilege_router.post(
+    "/add_privilege_client_relationship", description="给客户添加权益", summary="给客户添加权益"
+)
 async def add_privilege_client_relationship(
     client_name: str = Body(..., description="客户名称"),
     privilege_name: str = Body(..., description="权益ID"),
@@ -199,7 +205,7 @@ async def add_privilege_client_relationship(
         )
 
 
-@privilege_router.post("/create_privilege", description="创建权益")
+@privilege_router.post("/create_privilege", description="创建权益", summary="创建权益")
 async def create_privilege(
     name: str = Body(..., description="权益名称"),
     privilege_type: str = Body("", description="权益类型"),
@@ -222,7 +228,7 @@ async def create_privilege(
         )
 
 
-@privilege_router.put("/update_privilege", description="更新权益")
+@privilege_router.put("/update_privilege", description="更新权益", summary="更新权益")
 async def update_privilege(
     id: int = Body(..., description="权益ID"),
     name: Union[str] = Body(None, description="权益名称"),
@@ -251,7 +257,9 @@ async def update_privilege(
         )
 
 
-@privilege_router.put("/update_privilege_client_relationship", description="更新客户的权益")
+@privilege_router.put(
+    "/update_privilege_client_relationship", description="更新客户的权益", summary="更新客户的权益"
+)
 async def update_privilege_from_client(
     privilege_id: int = Body(..., description="权益ID"),
     effective_time: str = Body("", description="生效时间"),
@@ -294,7 +302,7 @@ async def update_privilege_from_client(
         )
 
 
-@privilege_router.delete("/delete_privilege", description="删除权益")
+@privilege_router.delete("/delete_privilege", description="删除权益", summary="删除权益")
 async def delete_privilege(id: int = Query(..., description="权益ID")):
     try:
         with SessionLocal() as db:
@@ -316,7 +324,9 @@ async def delete_privilege(id: int = Query(..., description="权益ID")):
         )
 
 
-@privilege_router.delete("/delete_privilege_client_relationship", description="删除客户的权益")
+@privilege_router.delete(
+    "/delete_privilege_client_relationship", description="删除客户的权益", summary="删除客户的权益"
+)
 async def delete_privilege_from_client(
     privilege_id: int = Query(..., description="权益ID"),
 ):

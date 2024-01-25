@@ -13,7 +13,7 @@ from models.base import ClientSchema, AddressSchema
 client_router = APIRouter()
 
 
-@client_router.get("/get_clients")
+@client_router.get("/get_clients", summary="获取客户列表")
 async def get_clients(
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
@@ -41,7 +41,7 @@ async def get_clients(
         )
 
 
-@client_router.get("/get_client_addresses")
+@client_router.get("/get_client_addresses", summary="根据客户ID获取客户地址列表")
 async def get_client_addresses(
     client_id: int = Query(..., description="客户ID"),
     order_field: str = Query("id", description="排序字段"),
@@ -71,7 +71,7 @@ async def get_client_addresses(
         )
 
 
-@client_router.post("/add_client")
+@client_router.post("/add_client", summary="添加客户")
 async def add_client(
     client_type: str = Body(..., description="客户类型"),
     name: str = Body(..., description="姓名"),
@@ -109,7 +109,7 @@ async def add_client(
         )
 
 
-@client_router.put("/update_client")
+@client_router.put("/update_client", summary="修改客户信息")
 async def update_client(
     client_id: int = Body(..., description="客户ID"),
     client_type: str | None = Body(None, description="客户类型"),
@@ -146,7 +146,7 @@ async def update_client(
         )
 
 
-@client_router.put("/update_client_address")
+@client_router.put("/update_client_address", summary="修改客户地址信息")
 async def update_client_address(
     address_id: int = Body(..., description="地址ID"),
     name: str | None = Body(None, description="姓名"),
@@ -180,7 +180,7 @@ async def update_client_address(
         )
 
 
-@client_router.delete("/delete_client")
+@client_router.delete("/delete_client", summary="删除客户")
 async def delete_client(
     client_id: int = Query(..., description="客户ID"),
 ):
@@ -204,7 +204,7 @@ async def delete_client(
         )
 
 
-@client_router.delete("/delete_client_address")
+@client_router.delete("/delete_client_address", summary="删除客户地址")
 async def delete_client_address(
     address_id: int = Query(..., description="地址ID"),
 ):

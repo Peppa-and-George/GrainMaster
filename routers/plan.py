@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fastapi.responses import JSONResponse
-from fastapi import status, Depends
+from fastapi import status, Depends, Body
 from fastapi.exceptions import HTTPException
 
 from fastapi import APIRouter, Query
@@ -13,7 +13,7 @@ from models.base import PlanSchema
 plan_router = APIRouter()
 
 
-@plan_router.get("/plans")
+@plan_router.get("/get_plans", summary="批量获取计划信息")
 async def get_plans(
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
@@ -46,15 +46,22 @@ def get_location_id_by_name(name: str) -> int:
         return location.id
 
 
-@plan_router.post("/add_plan")
+@plan_router.post("/add_plan", summary="添加计划")
 async def add_plan(
-    year: int = Query(..., description="年份"),
-    location: str = Depends(get_location_id_by_name),
-    total_material: int = Query(..., description="总产量(L)"),
+    year: int = Body(..., description="年份"),
+    batch: int = Body(..., description="批次"),
+    location: str = Body(..., description="基地名称"),
+    total_material: int = Body(..., description="总产量(L)"),
 ):
     try:
         with SessionLocal() as db:
-            plan = Plan(year=year, location_id=location, total_material=total_material)
+            location = get_location_id_by_name(location)
+            plan = Plan(
+                year=year,
+                location_id=location,
+                total_material=total_material,
+                batch=batch,
+            )
             db.add(plan)
             db.commit()
             return JSONResponse(
@@ -67,7 +74,7 @@ async def add_plan(
         )
 
 
-@plan_router.put("/update_plan")
+@plan_router.put("/update_plan", summary="修改计划")
 async def update_plan(
     plan_id: int = Query(..., description="计划ID"),
     year: int = Query(..., description="年份"),
@@ -95,7 +102,7 @@ async def update_plan(
         )
 
 
-@plan_router.delete("/delete_plan")
+@plan_router.delete("/delete_plan", summary="删除计划")
 async def delete_plan(
     plan_id: int = Query(..., description="计划ID"),
 ):
@@ -118,7 +125,7 @@ async def delete_plan(
         )
 
 
-@plan_router.get("/filter_plan")
+@plan_router.get("/filter_plan", summary="筛选计划")
 async def filter_plan(
     year: int | None = Query(None, description="年份"),
     location: str | None = Query(None, description="基地名称"),

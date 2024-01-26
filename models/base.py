@@ -157,3 +157,100 @@ class ClientPrivilegeRelationSchema(BaseModel):
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlantSchema(BaseModel):
+    id: int = Field(description="种植ID")
+    plan_id: int = Field(description="计划ID")
+    operator: Union[str] = Field(description="操作人")
+    segment: int = Field(description="种植环节ID")
+    operation_date: Union[datetime] = Field(description="操作时间")
+    remarks: Union[str] = Field(description="备注")
+    image_uri: Union[str] = Field(description="图片")
+    video_uri: Union[str] = Field(description="视频")
+    create_time: Union[datetime] = Field(description="创建时间")
+    update_time: Union[datetime] = Field(description="更新时间")
+    plan: PlanSchema = Field(description="计划信息")
+    # plant_operates: Mapped[List["PlantOperate"]] = relationship(
+    #     "PlantOperate", back_populates="segment"
+    # )
+
+    @field_serializer("create_time", "update_time", "operation_date")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TransportSchema(BaseModel):
+    id: int = Field(description="运输ID")
+    plant_id: int = Field(description="种植ID")
+    operate_date: datetime = Field(description="操作时间")
+    loading_worker: str = Field(description="装车人")
+    driver: str = Field(description="运输人员")
+    unload_worker: str = Field(description="卸车人")
+    unload_place: str = Field(description="卸车地点")
+    air_worker: str = Field(description="晾晒人员")
+    clean_worker: str = Field(description="清洗人员")
+    after_clean_driver: str = Field(description="清洗后运输人员")
+    after_unload_worker: str = Field(description="清洗后卸车人员")
+    after_unload_place: str = Field(description="清洗后卸车地点")
+    notices: str = Field(description="备注")
+    status: str = Field(description="状态")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "operate_date")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WarehouseSchema(BaseModel):
+    id: int = Field(description="仓库ID")
+    plan_id: int = Field(description="计划ID")
+    operate_date: datetime = Field(description="计划操作日期")
+    feeding_place: str = Field(description="投料口转运")
+    feeding_warehouse: str = Field(description="投料仓转运地点")
+    feeding: str = Field(description="投料")
+    press: str = Field(description="压榨")
+    refine: str = Field(description="精炼")
+    sorting: str = Field(description="分装")
+    warehousing: str = Field(description="入库")
+    product_warehousing: str = Field(description="成品入库地点")
+    notices: str = Field(description="备注")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "operate_date")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderSchema(BaseModel):
+    id: int = Field(description="订单ID")
+    client_id: int = Field(description="客户ID")
+    plan_id: int = Field(description="计划ID")
+    product_id: int = Field(description="产品ID")
+
+
+class LogisticsPlanSchema(BaseModel):
+    id: int = Field(description="物流计划ID")
+    plan_id: int = Field(description="计划ID")
+    operate_date: datetime = Field(description="计划操作日期")
+    operate_people: str = Field(description="操作人员")
+    order: int = Field(description="订单ID")
+    notices: str = Field(description="备注")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    order: OrderSchema = Field(description="订单信息")
+
+    @field_serializer("create_time", "update_time", "operate_date")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)

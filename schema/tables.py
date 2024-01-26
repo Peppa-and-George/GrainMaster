@@ -244,7 +244,7 @@ class Address(Base):
     client: Mapped["Client"] = relationship(
         "Client", back_populates="addresses", foreign_keys=[client_id]
     )
-    logistics: Mapped["Logistics"] = relationship("Logistics", back_populates="address")
+    express: Mapped["Express"] = relationship("Express", back_populates="address")
 
 
 class Location(Base):
@@ -336,9 +336,8 @@ class Order(Base):
     plan_id = Column(ForeignKey("plan.id"))
     client_id = Column(ForeignKey("client.id"))
     product_id = Column(ForeignKey("product.id"))
-    num = Column(Integer, nullable=False, comment="数量", name="num")
+    num = Column(String(64), nullable=False, comment="订单编号", name="num", unique=True)
 
-    Logistics_number = Column(ForeignKey("logistics.number"), comment="物流单号")
     status = Column(String(100), nullable=False, comment="状态", name="status")
 
     create_time = Column(
@@ -352,9 +351,6 @@ class Order(Base):
         name="update_time",
     )
 
-    logistics: Mapped["Logistics"] = relationship(
-        "Logistics", back_populates="order", foreign_keys=[Logistics_number]
-    )
     client: Mapped["Client"] = relationship(
         "Client", back_populates="orders", foreign_keys=[client_id]
     )
@@ -362,10 +358,13 @@ class Order(Base):
         "Plan", back_populates="orders", foreign_keys=[plan_id]
     )
     product: Mapped["Product"] = relationship("Product", foreign_keys=[product_id])
+    logistics_plan: Mapped["LogisticsPlan"] = relationship(
+        "LogisticsPlan", back_populates="order"
+    )
 
 
-class Logistics(Base):
-    __tablename__ = "logistics"
+class Express(Base):
+    __tablename__ = "express"
     number = Column(
         String(100),
         unique=True,
@@ -393,16 +392,43 @@ class Logistics(Base):
     )
 
     address: Mapped["Address"] = relationship(
-        "Address", back_populates="logistics", foreign_keys=[address_id]
+        "Address", back_populates="express", foreign_keys=[address_id]
     )
-    order: Mapped["Order"] = relationship("Order", back_populates="logistics")
+
+
+# class Plant(Base):
+#     __tablename__ = "plant"
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     plan_id = Column(ForeignKey("plan.id"), comment="计划")
+#     operator = Column(String(50), comment="操作人员", name="operator")
+#     segment = Column(ForeignKey("segment.id"), comment="种植环节")
+#     operation_date = Column(DateTime, comment="计划操作日期", name="operation_date")
+#     remarks = Column(Text, comment="备注", name="remarks")
+#     image_uri = Column(Text, comment="图片", name="image_uri")
+#     video_uri = Column(Text, comment="视频", name="video_uri")
+#     create_time = Column(
+#         DateTime, default=datetime.now, comment="创建时间", name="create_time"
+#     )
+#     update_time = Column(
+#         DateTime,
+#         default=datetime.now,
+#         onupdate=datetime.now,
+#         comment="更新时间",
+#         name="update_time",
+#     )
+#
+#     plan: Mapped["Plan"] = relationship(
+#         "Plan", back_populates="plants", foreign_keys=[plan_id]
+#     )
+#     plant_operates: Mapped[List["PlantOperate"]] = relationship(
+#         "PlantOperate", back_populates="segment"
+#     )
 
 
 class PlantSegment(Base):
     __tablename__ = "segment"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    plan_id = Column(ForeignKey("plan.id"))
-
+    plan_id = Column(ForeignKey("plan.id"), comment="计划")
     name = Column(String(50), nullable=False, comment="种植环节", name="name")
 
     create_time = Column(
@@ -416,11 +442,11 @@ class PlantSegment(Base):
         name="update_time",
     )
 
-    plan: Mapped["Plan"] = relationship(
-        "Plan", back_populates="segments", foreign_keys=[plan_id]
-    )
     plant_operates: Mapped[List["PlantOperate"]] = relationship(
         "PlantOperate", back_populates="segment"
+    )
+    plan: Mapped["Plan"] = relationship(
+        "Plan", back_populates="segments", foreign_keys=[plan_id]
     )
 
 
@@ -495,6 +521,7 @@ class Transport(Base):
         String(50), comment="清选后卸货地点", name="after_unload_place"
     )
     notices = Column(Text, comment="备注", name="notices")
+    status = Column(String(50), comment="状态", name="status", default="未开始")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -516,6 +543,7 @@ class Warehouse(Base):
     __tablename__ = "warehouse"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
+    status = Column(String(50), comment="状态", name="status", default="未开始")
 
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
@@ -552,12 +580,12 @@ class LogisticsPlan(Base):
     __tablename__ = "logistics_plan"  # noqa 物流运输计划
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
-
+    order_id = Column(ForeignKey("order.id"))
+    status = Column(String(50), comment="状态", name="status", default="未开始")
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
     )
     operate_people = Column(String(50), comment="操作人员", name="operate_people")
-    order_num = Column(String(250), comment="发货订单", name="order_num")
     notices = Column(Text, comment="备注", name="notices")
 
     create_time = Column(
@@ -572,6 +600,9 @@ class LogisticsPlan(Base):
     )
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="logistics_plans", foreign_keys=[plan_id]
+    )
+    order: Mapped["Order"] = relationship(
+        "Order", back_populates="logistics_plan", foreign_keys=[order_id]
     )
 
 

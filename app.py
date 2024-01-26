@@ -14,6 +14,9 @@ from routers.plan import plan_router
 from routers.location import location_router
 from routers.client import client_router
 from routers.privilege import privilege_router
+from routers.transport import transport_router
+from routers.warehouse import warehouse_router
+from routers.logistics import logistics_router
 from journal import log
 from auth import (
     jwt,
@@ -43,6 +46,9 @@ app.include_router(location_router, tags=["位置管理"], prefix="/location")
 app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
 app.include_router(client_router, tags=["客户管理"], prefix="/client")
 app.include_router(privilege_router, tags=["权限管理"], prefix="/privilege")
+app.include_router(transport_router, tags=["运输管理"], prefix="/transport")
+app.include_router(warehouse_router, tags=["仓储管理"], prefix="/warehouse")
+app.include_router(logistics_router, tags=["物流计划"], prefix="/logistics")
 
 
 async def sieve_middleware(request: Request, call_next):

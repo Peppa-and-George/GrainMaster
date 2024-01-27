@@ -45,7 +45,7 @@ def update_camera():
         if is_expired_date(camera_second.expire_time):
             camera_list = get_all_camera_m3u8url()
             for camera in camera_list:
-                cam = session.query(Camera).filter("sn"==camera["deviceSerial"]).first()
+                cam = session.query(Camera).filter(Camera.sn==camera["deviceSerial"]).first()
                 cam.expired = date_string_to_datetime(camera["expire_time"])
                 cam.status = camera["status"]
                 cam.stream_url = camera["url"]

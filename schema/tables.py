@@ -95,13 +95,17 @@ class Camera(Base):
     __tablename__ = "camera"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), nullable=False, index=True, name="name", comment="摄像头名称")
-    sn = Column(String(64), nullable=False, name="sn", comment="摄像头序列号")
-    uri = Column(String(256), nullable=False, name="uri", comment="摄像头URI")
-    state = Column(String(32), nullable=False, name="state", comment="摄像头状态")
-    address: str = Column(String(128), nullable=True, name="address", comment="摄像头地址")
-    location: str = Column(String(128), nullable=True, name="location", comment="摄像头位置")
-    step: str = Column(String(256), nullable=True, name="step", comment="所属环节")
+    name = Column(String(128), index=True, name="name", comment="摄像头名称")
+    d_name = Column(String(128), name="d_name", comment="设备别名")
+    sn = Column(String(128), nullable=True, name="sn", comment="摄像头序列号")
+    status = Column(Integer, nullable=True, name="status", comment="摄像头状态") # 0 离线 1在线
+    address = Column(String(128), name="address", comment="摄像头地址")
+    location = Column(String(128), name="location", comment="摄像头位置")
+    step = Column(String(256) , name="step", comment="所属环节")
+    stream_url = Column(String(255), name="stream_url", comment="m3u8流地址")
+    expire_time = Column(DateTime, name="expire_time", comment="过期时间")
+
+
     update_time = Column(
         DateTime,
         default=datetime.now,
@@ -112,7 +116,6 @@ class Camera(Base):
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
-    orders: Mapped[List["Order"]] = relationship("Order", back_populates="camera")
 
 
 class Privilege(Base):
@@ -338,18 +341,12 @@ class Order(Base):
     plan_id = Column(ForeignKey("plan.id"))
     client_id = Column(ForeignKey("client.id"))
     product_id = Column(ForeignKey("product.id"))
-    camera_id = Column(ForeignKey("camera.id"))
     num = Column(String(64), nullable=False, comment="订单编号", name="num", unique=True)
-    customized_area = Column(Float, comment="定制面积", name="customized_area")
-    status = Column(
-        String(100), nullable=False, comment="状态", name="status", default="进行中"
-    )
+
+    status = Column(String(100), nullable=False, comment="状态", name="status")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
-    )
-    complete_time = Column(
-        DateTime, comment="完成时间", name="complete_time", nullable=True
     )
     update_time = Column(
         DateTime,
@@ -369,7 +366,6 @@ class Order(Base):
     logistics_plan: Mapped["LogisticsPlan"] = relationship(
         "LogisticsPlan", back_populates="order"
     )
-    camera: Mapped["Camera"] = relationship("Camera", foreign_keys=[camera_id])
 
 
 class Express(Base):

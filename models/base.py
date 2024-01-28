@@ -235,6 +235,24 @@ class OrderSchema(BaseModel):
     client_id: int = Field(description="客户ID")
     plan_id: int = Field(description="计划ID")
     product_id: int = Field(description="产品ID")
+    camera_id: int = Field(description="摄像头ID")
+    num: str = Field(description="订单编号")
+    status: str = Field(description="订单状态")
+    customized_area: float = Field(description="定制面积")
+    create_time: datetime = Field(description="创建时间")
+    complete_time: datetime = Field(description="完成时间")
+    update_time: datetime = Field(description="更新时间")
+
+    client: ClientSchema = Field(description="客户信息")
+    plan: PlanSchema = Field(description="计划信息")
+    product: ProductSchema = Field(description="产品信息")
+    camera: "CameraSchema" = Field(description="摄像头信息")
+
+    @field_serializer("create_time", "update_time", "complete_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LogisticsPlanSchema(BaseModel):
@@ -254,3 +272,19 @@ class LogisticsPlanSchema(BaseModel):
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CameraSchema(BaseModel):
+    id: int = Field(description="摄像头ID")
+    name: str = Field(description="摄像头名称")
+    sn: str = Field(description="摄像头序列号")
+    state: str = Field(description="摄像头状态")
+    address: str = Field(description="摄像头地址")
+    location: str = Field(description="摄像头位置")
+    uri: str = Field(description="摄像头URI")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""

@@ -8,18 +8,9 @@ class Token(BaseModel):
     token_type: str
 
 
-class User(BaseModel):
+class UserSchema(BaseModel):
     name: str
     phone_number: int
-
-
-class UserInfo(User):
-    password: str
-
-
-class UserRestPasswd(BaseModel):
-    name: str | int
-    new_password: str
 
 
 class ProductSchema(BaseModel):

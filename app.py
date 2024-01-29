@@ -7,7 +7,6 @@ from fastapi import FastAPI, Response, Request, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from models.base import Token
-from schema.curd import CURD
 from routers.user import router as user_router
 from routers.product import product_router
 from routers.plan import plan_router
@@ -28,25 +27,22 @@ from auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
     ALGORITHM,
+    verify_password,
 )
 from config import IMAGE_DIR, VIDEOS_DIR
+from schema.database import SessionLocal
+from schema.tables import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
-curd = CURD()
 
 app = FastAPI(title="backend", version="1.0.0")
 app.include_router(
     user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
 )
-# app.include_router(product_router, tags=["产品管理"], dependencies=[Depends(oauth2_scheme)], prefix="/product")
-app.include_router(product_router, tags=["产品管理"], prefix="/product")
-# app.include_router(file_router, dependencies=[Depends(oauth2_scheme)])
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
 app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
-# app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
+app.include_router(product_router, tags=["产品管理"], prefix="/product")
 app.include_router(location_router, tags=["位置管理"], prefix="/location")
-# app.include_router(camera_router, dependencies=[Depends(oauth2_scheme)])
-# app.include_router(camera_router)
 app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
 app.include_router(client_router, tags=["客户管理"], prefix="/client")
 app.include_router(privilege_router, tags=["权益管理"], prefix="/privilege")
@@ -99,27 +95,29 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):  # 验证token
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = curd.user.get_user(username)
-    if user is None:
-        raise credentials_exception
-    return user
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.name == username).first()
+        if not user:
+            raise credentials_exception
+        return user
 
 
 @app.post("/get_access_token", response_model=Token, description="获取token", tags=["认证"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = curd.user.check_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.name == form_data.username).first()
+        if not verify_password(form_data.password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.name}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.name}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
 
 
 def runserver(workers):

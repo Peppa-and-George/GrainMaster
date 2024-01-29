@@ -11,7 +11,6 @@ from routers.user import router as user_router
 from routers.product import product_router
 from routers.plan import plan_router
 from routers.location import location_router
-from routers.client import client_router
 from routers.privilege import privilege_router
 from routers.transport import transport_router
 from routers.warehouse import warehouse_router
@@ -37,13 +36,11 @@ from schema.tables import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 
-app = FastAPI(title="backend", version="1.0.0")
-app.include_router(
-    user_router, tags=["系统管理"], dependencies=[Depends(oauth2_scheme)], prefix="/user"
-)
+app = FastAPI(title="backend", version="1.0.0", dependencies=[Depends(oauth2_scheme)])
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
 app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
 app.mount("/report", StaticFiles(directory=REPORT_DIR), name="report")
+app.include_router(user_router, tags=["系统管理"], prefix="/user")
 app.include_router(client_router, tags=["首页统计"], prefix="/statistic")
 app.include_router(product_router, tags=["产品管理"], prefix="/product")
 app.include_router(location_router, tags=["位置管理"], prefix="/location")
@@ -131,8 +128,7 @@ def runserver(workers):
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8081,
+        port=8082,
         workers=workers,
-        reload=True,
         # log_level="critical"
     )

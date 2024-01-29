@@ -66,7 +66,7 @@ async def create_user(
         user = User(
             name=username,
             phone_number=phone_number,
-            password=get_base64_password(password),
+            hashed_passwd=get_base64_password(password),
         )
         db.add(user)
         db.commit()

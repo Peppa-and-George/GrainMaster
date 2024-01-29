@@ -174,7 +174,7 @@ async def add_location_api(
 async def update_location_api(
     id: int = Body(..., description="位置id"),
     name: str = Body(None, description="位置名称"),
-    type: str = Body(None, description="位置类型", example="仓库"),
+    type: str = Body(None, description="位置类型", examples=["仓库"]),
     longitude: float = Body(None, description="经度"),
     latitude: float = Body(None, description="纬度"),
     address: str = Body(None, description="地址"),

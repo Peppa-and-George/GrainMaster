@@ -71,8 +71,8 @@ async def get_transports_api(
 
 @transport_router.post("/add_transport", summary="添加运输信息")
 async def add_transport_api(
-    plan_id: int = Body(..., description="计划ID", example=1),
-    operate_date: str = Body(..., description="操作时间", example="2021-01-01 00:00:00"),
+    plan_id: int = Body(..., description="计划ID", examples=[1]),
+    operate_date: str = Body(..., description="操作时间", examples=["2021-01-01 00:00:00"]),
     loader_worker: str = Body("", description="装车人"),
     driver: str = Body("", description="运输人员"),
     unload_worker: str = Body("", description="卸车人"),

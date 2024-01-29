@@ -129,9 +129,11 @@ async def add_plant_segment_api(
     operate_step: list[dict] = Body(
         ...,
         description="操作步骤",
-        example=[
-            {"operate_name": "步骤一", "index": 1},
-            {"operate_name": "步骤二", "index": 2},
+        examples=[
+            [
+                {"operate_name": "步骤一", "index": 1},
+                {"operate_name": "步骤二", "index": 2},
+            ]
         ],
     ),
 ):

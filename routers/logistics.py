@@ -68,7 +68,9 @@ async def get_logistics(
 @logistics_router.post("/add_logistics", summary="添加物流计划")
 async def add_logistics(
     plan_id: int = Body(..., description="计划id"),
-    operate_date: str = Body(..., description="计划操作日期", example="2021-01-01 00:00:00"),
+    operate_date: str = Body(
+        ..., description="计划操作日期", examples=["2021-01-01 00:00:00"]
+    ),
     operate_people: str = Body(..., description="计划操作人"),
     order_num: str = Body(..., description="订单编号"),
     notices: str = Body(..., description="备注"),

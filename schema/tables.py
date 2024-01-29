@@ -610,6 +610,7 @@ class Quality(Base):
     people = Column(String(50), nullable=False, comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
     report = Column(Text, comment="文件路径", name="report")
+    upload_time = Column(DateTime, comment="上传时间", name="upload_time")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"

@@ -19,6 +19,8 @@ from routers.logistics import logistics_router
 from routers.order import order_router
 from routers.camera import camera_router
 from routers.plant import plant_router
+from routers.report import report_router
+from routers.statistic import client_router
 from journal import log
 from auth import (
     jwt,
@@ -29,7 +31,7 @@ from auth import (
     ALGORITHM,
     verify_password,
 )
-from config import IMAGE_DIR, VIDEOS_DIR
+from config import IMAGE_DIR, VIDEOS_DIR, REPORT_DIR
 from schema.database import SessionLocal
 from schema.tables import User
 
@@ -41,6 +43,8 @@ app.include_router(
 )
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
 app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
+app.mount("/report", StaticFiles(directory=REPORT_DIR), name="report")
+app.include_router(client_router, tags=["首页统计"], prefix="/statistic")
 app.include_router(product_router, tags=["产品管理"], prefix="/product")
 app.include_router(location_router, tags=["位置管理"], prefix="/location")
 app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
@@ -52,6 +56,7 @@ app.include_router(warehouse_router, tags=["仓储管理"], prefix="/warehouse")
 app.include_router(logistics_router, tags=["物流计划"], prefix="/logistics")
 app.include_router(order_router, tags=["订单管理"], prefix="/order")
 app.include_router(camera_router, tags=["摄像头管理"], prefix="/camera")
+app.include_router(report_router, tags=["质检报告"], prefix="/quality_report")
 
 
 async def sieve_middleware(request: Request, call_next):

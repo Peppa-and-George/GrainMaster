@@ -310,3 +310,23 @@ class CameraSchema(BaseModel):
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class QualitySchema(BaseModel):
+    id: int = Field(description="质检报告ID")
+    plan_id: int = Field(description="计划ID")
+    name: str = Field(description="质检报告名称")
+    people: Optional[str] = Field(description="质检人员", default=None)
+    status: Optional[str] = Field(description="质检状态", default=None)
+    report_url: Optional[str] = Field(description="质检报告地址", default=None)
+    upload_time: datetime = Field(description="上传时间")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    plan: PlanSchema = Field(description="计划信息")
+
+    @field_serializer("create_time", "update_time", "upload_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S")
+
+    model_config = ConfigDict(from_attributes=True)

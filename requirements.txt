@@ -8,3 +8,5 @@ pydantic~=2.5.2
 alembic~=1.13.1
 fastapi[all]
 Pillow~=10.1.0
+requests
+python-multipart

@@ -10,44 +10,10 @@ from sqlalchemy import (
     Boolean,
     Text,
     Float,
-    Table,
 )
-from sqlalchemy import DATETIME
 from sqlalchemy.orm import relationship, Mapped
 
 from schema.database import Base
-
-
-# relationship_order_product = Table(
-#     "order_product",
-#     Base.metadata,
-#     Column("id", Integer, primary_key=True, autoincrement=True),
-#     Column("order_id", Integer, ForeignKey("order.id"), comment="订单id"),
-#     Column("product_id", Integer, ForeignKey("product.id"), comment="产品id"),
-#     Column("num", Integer, comment="数量", name="num", nullable=False),
-#     Column("price", Float, comment="价格", name="price", nullable=False),
-#     Column("total", Float, comment="总价", name="total", nullable=False),
-# )
-
-# relationship_privilege_client = Table(
-#     "client_privilege",
-#     Base.metadata,
-#     Column("id", Integer, primary_key=True, autoincrement=True),
-#     Column(
-#         "privilege_number",
-#         String(32),
-#         comment="权益编号",
-#         nullable=False,
-#         unique=True,
-#     ),
-#     Column("client_id", Integer, ForeignKey("client.id"), comment="客户id"),
-#     Column("privilege_id", Integer, ForeignKey("privilege.id"), comment="权益id"),
-#     Column(DATETIME, comment="过期时间", name="expired_date"),
-#     Column(DATETIME, comment="生效时间", name="effective_time"),
-#     Column(Boolean, comment="是否生效", name="status"),
-#     Column(DATETIME, comment="使用时间", name="use_time"),
-#     Column(Boolean, comment="是否可用", name="usable"),
-# )
 
 
 class User(Base):
@@ -90,21 +56,21 @@ class Product(Base):
         name="update_time",
     )
 
+    orders: Mapped[List["Order"]] = relationship("Order", back_populates="product")
+
 
 class Camera(Base):
     __tablename__ = "camera"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(128), index=True, name="name", comment="摄像头名称")
-    d_name = Column(String(128), name="d_name", comment="设备别名")
+    alise_name = Column(String(128), name="alise_name", comment="设备别名")
     sn = Column(String(128), nullable=True, name="sn", comment="摄像头序列号")
-    status = Column(Integer, nullable=True, name="status", comment="摄像头状态") # 0 离线 1在线
+    status = Column(Integer, nullable=True, name="status", comment="摄像头状态")  # 0 离线 1在线
     address = Column(String(128), name="address", comment="摄像头地址")
     location = Column(String(128), name="location", comment="摄像头位置")
-    step = Column(String(256) , name="step", comment="所属环节")
     stream_url = Column(String(255), name="stream_url", comment="m3u8流地址")
     expire_time = Column(DateTime, name="expire_time", comment="过期时间")
-
 
     update_time = Column(
         DateTime,
@@ -116,6 +82,8 @@ class Camera(Base):
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
+
+    orders: Mapped[List["Order"]] = relationship("Order", back_populates="camera")
 
 
 class Privilege(Base):
@@ -251,6 +219,8 @@ class Address(Base):
     )
     express: Mapped["Express"] = relationship("Express", back_populates="address")
 
+    orders: Mapped[List["Order"]] = relationship("Order", back_populates="address")
+
 
 class Location(Base):
     __tablename__ = "location"  # noqa
@@ -292,7 +262,7 @@ class Plan(Base):
     location_id = Column(
         ForeignKey("location.id", ondelete="CASCADE"),
         comment="基地",
-        name="location",
+        name="location_id",
     )
 
     create_people = Column(String(50), comment="创建人", name="create_people")
@@ -319,8 +289,8 @@ class Plan(Base):
         foreign_keys=[location_id],
         back_populates="plans",
     )
-    segments: Mapped[List["PlantSegment"]] = relationship(
-        "PlantSegment", back_populates="plan"
+    segments: Mapped[List["PlanSegmentRelationship"]] = relationship(
+        "PlanSegmentRelationship", back_populates="plan"
     )
     transports: Mapped[List["Transport"]] = relationship(
         "Transport", back_populates="plan"
@@ -340,11 +310,17 @@ class Order(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
     client_id = Column(ForeignKey("client.id"))
+    address_id = Column(ForeignKey("address.id"))
     product_id = Column(ForeignKey("product.id"))
+    camera_id = Column(ForeignKey("camera.id"))
     num = Column(String(64), nullable=False, comment="订单编号", name="num", unique=True)
-
-    status = Column(String(100), nullable=False, comment="状态", name="status")
-
+    customized_area = Column(
+        Float, nullable=False, comment="定制面积", name="customized_area"
+    )
+    status = Column(
+        String(100), nullable=False, comment="状态", name="status", default="进行中"
+    )
+    complete_time = Column(DateTime, comment="完成时间", name="complete_time")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
@@ -359,12 +335,20 @@ class Order(Base):
     client: Mapped["Client"] = relationship(
         "Client", back_populates="orders", foreign_keys=[client_id]
     )
+    address: Mapped["Address"] = relationship(
+        "Address", back_populates="orders", foreign_keys=[address_id]
+    )
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="orders", foreign_keys=[plan_id]
     )
-    product: Mapped["Product"] = relationship("Product", foreign_keys=[product_id])
+    product: Mapped["Product"] = relationship(
+        "Product", foreign_keys=[product_id], back_populates="orders"
+    )
     logistics_plan: Mapped["LogisticsPlan"] = relationship(
         "LogisticsPlan", back_populates="order"
+    )
+    camera: Mapped["Camera"] = relationship(
+        "Camera", foreign_keys=[camera_id], back_populates="orders"
     )
 
 
@@ -401,40 +385,42 @@ class Express(Base):
     )
 
 
-# class Plant(Base):
-#     __tablename__ = "plant"
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     plan_id = Column(ForeignKey("plan.id"), comment="计划")
-#     operator = Column(String(50), comment="操作人员", name="operator")
-#     segment = Column(ForeignKey("segment.id"), comment="种植环节")
-#     operation_date = Column(DateTime, comment="计划操作日期", name="operation_date")
-#     remarks = Column(Text, comment="备注", name="remarks")
-#     image_uri = Column(Text, comment="图片", name="image_uri")
-#     video_uri = Column(Text, comment="视频", name="video_uri")
-#     create_time = Column(
-#         DateTime, default=datetime.now, comment="创建时间", name="create_time"
-#     )
-#     update_time = Column(
-#         DateTime,
-#         default=datetime.now,
-#         onupdate=datetime.now,
-#         comment="更新时间",
-#         name="update_time",
-#     )
-#
-#     plan: Mapped["Plan"] = relationship(
-#         "Plan", back_populates="plants", foreign_keys=[plan_id]
-#     )
-#     plant_operates: Mapped[List["PlantOperate"]] = relationship(
-#         "PlantOperate", back_populates="segment"
-#     )
+class PlanSegmentRelationship(Base):
+    __tablename__ = "plan_segment"
+    plan_id = Column(
+        ForeignKey("plan.id", ondelete="CASCADE"), comment="计划", primary_key=True
+    )
+    segment_id = Column(
+        ForeignKey("segment.id", ondelete="CASCADE"), comment="种植环节", primary_key=True
+    )
+    operator = Column(String(50), comment="操作人员", name="operator")
+    operation_date = Column(DateTime, comment="计划操作日期", name="operation_date")
+    remarks = Column(Text, comment="备注", name="remarks")
+    image_uri = Column(Text, comment="图片", name="image_uri")
+    video_uri = Column(Text, comment="视频", name="video_uri")
+    status = Column(String(50), comment="状态", name="status", default="未开始")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    plan: Mapped["Plan"] = relationship(
+        "Plan", back_populates="segments", foreign_keys=[plan_id]
+    )
+    segment: Mapped["Segment"] = relationship(
+        "Segment", back_populates="plans", foreign_keys=[segment_id]
+    )
 
 
-class PlantSegment(Base):
+class Segment(Base):
     __tablename__ = "segment"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    plan_id = Column(ForeignKey("plan.id"), comment="计划")
-    name = Column(String(50), nullable=False, comment="种植环节", name="name")
+    name = Column(String(50), nullable=False, comment="种植环节", name="name", unique=True)
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -447,21 +433,21 @@ class PlantSegment(Base):
         name="update_time",
     )
 
-    plant_operates: Mapped[List["PlantOperate"]] = relationship(
+    operations: Mapped[List["PlantOperate"]] = relationship(
         "PlantOperate", back_populates="segment"
     )
-    plan: Mapped["Plan"] = relationship(
-        "Plan", back_populates="segments", foreign_keys=[plan_id]
+    plans: Mapped[List["PlanSegmentRelationship"]] = relationship(
+        "PlanSegmentRelationship", back_populates="segment"
     )
 
 
 class PlantOperate(Base):
     __tablename__ = "operate"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    segment_id = Column(ForeignKey("segment.id"))
+    segment_id = Column(ForeignKey("segment.id", ondelete="CASCADE"))
 
     name = Column(String(50), nullable=False)
-
+    index = Column(Integer, nullable=False, comment="操作顺序", name="index")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
@@ -473,32 +459,8 @@ class PlantOperate(Base):
         name="update_time",
     )
 
-    segment: Mapped["PlantSegment"] = relationship(
-        "PlantSegment", back_populates="plant_operates", foreign_keys=[segment_id]
-    )
-    operate_value = relationship("PlantOperateValue", back_populates="operate")
-
-
-class PlantOperateValue(Base):
-    __tablename__ = "operate_value"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    operate_id = Column(ForeignKey("operate.id"))
-
-    image_str = Column(Text, nullable=False, comment="图片", name="image_str")
-    # todo 视频回放
-    status = Column(String(50), nullable=False, comment="状态", name="status")
-    create_time = Column(
-        DateTime, default=datetime.now, comment="创建时间", name="create_time"
-    )
-    update_time = Column(
-        DateTime,
-        default=datetime.now,
-        onupdate=datetime.now,
-        comment="更新时间",
-        name="update_time",
-    )
-    operate: Mapped["PlantOperate"] = relationship(
-        "PlantOperate", back_populates="operate_value", foreign_keys=[operate_id]
+    segment: Mapped["Segment"] = relationship(
+        "Segment", back_populates="operations", foreign_keys=[segment_id]
     )
 
 

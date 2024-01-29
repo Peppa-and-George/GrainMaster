@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_serializer, ConfigDict
-from typing import Any, List, Union
+from typing import Any, List, Union, Optional
 from datetime import datetime
 
 
@@ -90,7 +90,6 @@ class AddressSchema(BaseModel):
     detail_address: str = Field(description="地址")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
-    # client: Union["ClientSchema"] = Field(description="客户信息")
 
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
@@ -159,27 +158,54 @@ class ClientPrivilegeRelationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlantSchema(BaseModel):
+class SegmentSchema(BaseModel):
     id: int = Field(description="种植ID")
-    plan_id: int = Field(description="计划ID")
-    operator: Union[str] = Field(description="操作人")
-    segment: int = Field(description="种植环节ID")
-    operation_date: Union[datetime] = Field(description="操作时间")
-    remarks: Union[str] = Field(description="备注")
-    image_uri: Union[str] = Field(description="图片")
-    video_uri: Union[str] = Field(description="视频")
-    create_time: Union[datetime] = Field(description="创建时间")
-    update_time: Union[datetime] = Field(description="更新时间")
-    plan: PlanSchema = Field(description="计划信息")
-    # plant_operates: Mapped[List["PlantOperate"]] = relationship(
-    #     "PlantOperate", back_populates="segment"
-    # )
+    name: str = Field(description="种植名称")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
 
-    @field_serializer("create_time", "update_time", "operation_date")
+    operations: List["OperationSchema"] = Field(description="操作信息")
+
+    @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlanSegmentRelationshipSchema(BaseModel):
+    plan_id: int = Field(description="计划ID")
+    segment_id: int = Field(description="种植ID")
+    operator: str = Field(description="操作人")
+    operation_date: datetime = Field(description="操作日期")
+    remarks: Optional[str] = Field(description="备注")
+    image_uri: Optional[str] = Field(description="图片地址")
+    video_uri: Optional[str] = Field(description="视频地址")
+    status: Optional[str] = Field(description="状态")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    segment: SegmentSchema = Field(description="种植信息")
+    plan: PlanSchema = Field(description="计划信息")
+
+    @field_serializer("create_time", "update_time", "operation_date")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OperationSchema(BaseModel):
+    id: int = Field(description="操作ID")
+    segment_id: int = Field(description="种植ID")
+    name: str = Field(description="操作名称")
+    index: int = Field(description="操作顺序")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
 
 class TransportSchema(BaseModel):
@@ -240,13 +266,14 @@ class OrderSchema(BaseModel):
     status: str = Field(description="订单状态")
     customized_area: float = Field(description="定制面积")
     create_time: datetime = Field(description="创建时间")
-    complete_time: datetime = Field(description="完成时间")
+    complete_time: Optional[datetime] = Field(description="完成时间")
     update_time: datetime = Field(description="更新时间")
 
     client: ClientSchema = Field(description="客户信息")
     plan: PlanSchema = Field(description="计划信息")
     product: ProductSchema = Field(description="产品信息")
     camera: "CameraSchema" = Field(description="摄像头信息")
+    address: AddressSchema = Field(description="地址信息")
 
     @field_serializer("create_time", "update_time", "complete_time")
     def format_time(self, v: Any) -> Any:
@@ -276,15 +303,19 @@ class LogisticsPlanSchema(BaseModel):
 
 class CameraSchema(BaseModel):
     id: int = Field(description="摄像头ID")
-    name: str = Field(description="摄像头名称")
+    name: Optional[str] = Field(description="摄像头名称", default=None)
+    alise_name: Optional[str] = Field(description="摄像头别名", default=None)
     sn: str = Field(description="摄像头序列号")
-    state: str = Field(description="摄像头状态")
-    address: str = Field(description="摄像头地址")
-    location: str = Field(description="摄像头位置")
-    uri: str = Field(description="摄像头URI")
-    create_time: datetime = Field(description="创建时间")
+    status: int = Field(description="摄像头状态")
+    address: Optional[str] = Field(description="摄像头地址", default=None)
+    location: Optional[str] = Field(description="摄像头位置", default=None)
+    stream_url: Optional[str] = Field(description="摄像头流地址", default=None)
+    expire_time: Optional[datetime] = Field(description="摄像头过期时间", default=None)
     update_time: datetime = Field(description="更新时间")
+    create_time: datetime = Field(description="创建时间")
 
-    @field_serializer("create_time", "update_time")
+    @field_serializer("create_time", "update_time", "expire_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)

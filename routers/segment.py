@@ -3,7 +3,6 @@
 # from fastapi import Depends, HTTPException, status, Body, APIRouter, Query
 # from fastapi.responses import JSONResponse
 #
-# from schema.tables import PlantSegment
 # from schema.common import page_with_order, transform_schema
 #
 # segment_router = APIRouter()

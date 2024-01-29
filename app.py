@@ -18,6 +18,8 @@ from routers.transport import transport_router
 from routers.warehouse import warehouse_router
 from routers.logistics import logistics_router
 from routers.order import order_router
+from routers.camera import camera_router
+from routers.plant import plant_router
 from journal import log
 from auth import (
     jwt,
@@ -27,7 +29,7 @@ from auth import (
     SECRET_KEY,
     ALGORITHM,
 )
-from config import IMAGE_DIR
+from config import IMAGE_DIR, VIDEOS_DIR
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 curd = CURD()
@@ -40,17 +42,20 @@ app.include_router(
 app.include_router(product_router, tags=["产品管理"], prefix="/product")
 # app.include_router(file_router, dependencies=[Depends(oauth2_scheme)])
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
+app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
 # app.include_router(location_router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(location_router, tags=["位置管理"], prefix="/location")
 # app.include_router(camera_router, dependencies=[Depends(oauth2_scheme)])
 # app.include_router(camera_router)
 app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
 app.include_router(client_router, tags=["客户管理"], prefix="/client")
-app.include_router(privilege_router, tags=["权限管理"], prefix="/privilege")
+app.include_router(privilege_router, tags=["权益管理"], prefix="/privilege")
+app.include_router(plant_router, tags=["田间种植管理"], prefix="/plant")
 app.include_router(transport_router, tags=["运输管理"], prefix="/transport")
 app.include_router(warehouse_router, tags=["仓储管理"], prefix="/warehouse")
 app.include_router(logistics_router, tags=["物流计划"], prefix="/logistics")
 app.include_router(order_router, tags=["订单管理"], prefix="/order")
+app.include_router(camera_router, tags=["摄像头管理"], prefix="/camera")
 
 
 async def sieve_middleware(request: Request, call_next):

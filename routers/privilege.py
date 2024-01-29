@@ -13,7 +13,7 @@ from schema.database import SessionLocal
 privilege_router = APIRouter()
 
 
-@privilege_router.get("/get_privileges", description="获取权限列表", summary="获取权限列表")
+@privilege_router.get("/get_privileges", description="获取权益列表", summary="获取权益列表")
 async def get_privileges(
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),

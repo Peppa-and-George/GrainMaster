@@ -48,7 +48,7 @@ async def get_users_api(
 async def create_user(
     username: str = Body(..., description="用户名"),
     password: str = Body(..., description="密码"),
-    phone_number: str = Body(..., description="手机号"),
+    phone_number: int = Body(..., description="手机号"),
 ):
     """
     # 创建用户

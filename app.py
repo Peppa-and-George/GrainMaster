@@ -36,24 +36,24 @@ from schema.tables import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 
-app = FastAPI(title="backend", version="1.0.0", dependencies=[Depends(oauth2_scheme)])
+app = FastAPI(title="backend", version="1.0.0")
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
 app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
 app.mount("/report", StaticFiles(directory=REPORT_DIR), name="report")
-app.include_router(user_router, tags=["系统管理"], prefix="/user")
-app.include_router(client_router, tags=["首页统计"], prefix="/statistic")
-app.include_router(product_router, tags=["产品管理"], prefix="/product")
-app.include_router(location_router, tags=["位置管理"], prefix="/location")
-app.include_router(plan_router, tags=["计划管理"], prefix="/plan")
-app.include_router(client_router, tags=["客户管理"], prefix="/client")
-app.include_router(privilege_router, tags=["权益管理"], prefix="/privilege")
-app.include_router(plant_router, tags=["田间种植管理"], prefix="/plant")
-app.include_router(transport_router, tags=["运输管理"], prefix="/transport")
-app.include_router(warehouse_router, tags=["仓储管理"], prefix="/warehouse")
-app.include_router(logistics_router, tags=["物流计划"], prefix="/logistics")
-app.include_router(order_router, tags=["订单管理"], prefix="/order")
-app.include_router(camera_router, tags=["摄像头管理"], prefix="/camera")
-app.include_router(report_router, tags=["质检报告"], prefix="/quality_report")
+app.include_router(user_router, tags=["系统管理"], prefix="/user", dependencies=[Depends(oauth2_scheme)])
+app.include_router(client_router, tags=["首页统计"], prefix="/statistic", dependencies=[Depends(oauth2_scheme)])
+app.include_router(product_router, tags=["产品管理"], prefix="/product", dependencies=[Depends(oauth2_scheme)])
+app.include_router(location_router, tags=["位置管理"], prefix="/location", dependencies=[Depends(oauth2_scheme)])
+app.include_router(plan_router, tags=["计划管理"], prefix="/plan", dependencies=[Depends(oauth2_scheme)])
+app.include_router(client_router, tags=["客户管理"], prefix="/client", dependencies=[Depends(oauth2_scheme)])
+app.include_router(privilege_router, tags=["权益管理"], prefix="/privilege", dependencies=[Depends(oauth2_scheme)])
+app.include_router(plant_router, tags=["田间种植管理"], prefix="/plant", dependencies=[Depends(oauth2_scheme)])
+app.include_router(transport_router, tags=["运输管理"], prefix="/transport", dependencies=[Depends(oauth2_scheme)])
+app.include_router(warehouse_router, tags=["仓储管理"], prefix="/warehouse", dependencies=[Depends(oauth2_scheme)])
+app.include_router(logistics_router, tags=["物流计划"], prefix="/logistics", dependencies=[Depends(oauth2_scheme)])
+app.include_router(order_router, tags=["订单管理"], prefix="/order", dependencies=[Depends(oauth2_scheme)])
+app.include_router(camera_router, tags=["摄像头管理"], prefix="/camera", dependencies=[Depends(oauth2_scheme)])
+app.include_router(report_router, tags=["质检报告"], prefix="/quality_report", dependencies=[Depends(oauth2_scheme)])
 
 
 async def sieve_middleware(request: Request, call_next):
@@ -108,7 +108,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):  # 验证token
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     with SessionLocal() as db:
         user = db.query(User).filter(User.name == form_data.username).first()
-        if not verify_password(form_data.password, user.password):
+        if not verify_password(form_data.password, user.hashed_passwd):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
@@ -130,5 +130,6 @@ def runserver(workers):
         host="0.0.0.0",
         port=8082,
         workers=workers,
-        # log_level="critical"
+        log_level="critical",
+        # reload=True
     )

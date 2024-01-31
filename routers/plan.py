@@ -80,15 +80,11 @@ async def filter_plans(
         )
 
 
-def get_location_id_by_name(
-    location_name: Optional[str] = Query(None, description="基地名称")
-) -> Optional[int]:
+def get_location_id_by_name(location_name: str) -> Optional[int]:
     with SessionLocal() as db:
-        if not location_name:
-            return None
         location = db.query(Location).filter(Location.name == location_name).first()
         if not location:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="基地不存在")
+            return None
         return location.id
 
 
@@ -96,15 +92,21 @@ def get_location_id_by_name(
 async def add_plan(
     year: int = Body(..., description="年份"),
     batch: int = Body(..., description="批次"),
-    location: str = Body(..., description="基地名称"),
+    location_name: str = Body(..., description="基地名称"),
     total_material: int = Body(..., description="总产量(L)"),
 ):
     try:
         with SessionLocal() as db:
-            location = get_location_id_by_name(location)
+            if location_name:
+                location_id = get_location_id_by_name(location_name)
+                if location_id is None:
+                    return JSONResponse(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        content={"code": 1, "message": "基地不存在"},
+                    )
             plan = Plan(
                 year=year,
-                location_id=location,
+                location_id=location_id,
                 total_material=total_material,
                 batch=batch,
             )

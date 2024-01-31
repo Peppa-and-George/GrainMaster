@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from fastapi import APIRouter, HTTPException, status, Body, Query
 from fastapi.responses import JSONResponse
 
@@ -150,6 +150,15 @@ async def add_location_api(
     """
     try:
         with SessionLocal() as db:
+            query = db.query(Location).filter(Location.name == name)
+            if query.first():
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={
+                        "code": 1,
+                        "message": "添加失败, 位置已存在",
+                    },
+                )
             location = Location(
                 name=name,
                 type=type,
@@ -173,13 +182,13 @@ async def add_location_api(
 @location_router.put("/update_location", summary="更新位置信息")
 async def update_location_api(
     id: int = Body(..., description="位置id"),
-    name: str = Body(None, description="位置名称"),
-    type: str = Body(None, description="位置类型", examples=["仓库"]),
-    longitude: float = Body(None, description="经度"),
-    latitude: float = Body(None, description="纬度"),
-    address: str = Body(None, description="地址"),
-    area: float = Body(None, description="面积"),
-    customized: str = Body(None, description="是否定制"),
+    name: Optional[str] = Body(None, description="位置名称"),
+    type: Optional[str] = Body(None, description="位置类型", examples=["仓库"]),
+    longitude: Optional[float] = Body(None, description="经度"),
+    latitude: Optional[float] = Body(None, description="纬度"),
+    address: Optional[str] = Body(None, description="地址"),
+    area: Optional[float] = Body(None, description="面积"),
+    customized: Optional[str] = Body(None, description="是否定制"),
 ):
     """
     # 更新位置信息

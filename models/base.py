@@ -62,6 +62,8 @@ class PlanSchema(BaseModel):
     create_time: datetime | None = Field(description="创建时间")
     update_time: datetime | None = Field(description="更新时间")
 
+    location: LocationSchema = Field(description="基地信息")
+
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
         if v:

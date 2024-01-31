@@ -605,9 +605,9 @@ class LogisticsPlan(Base):
 class Quality(Base):
     __tablename__ = "quality"  # noqa
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    plan_id = Column(ForeignKey("plan.id"))
-    name = Column(String(50), nullable=False, comment="报告名称", name="name")
-    people = Column(String(50), nullable=False, comment="上传人", name="people")
+    plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
+    name = Column(String(50), comment="报告名称", name="name")
+    people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
     report = Column(Text, comment="文件路径", name="report")
     upload_time = Column(DateTime, comment="上传时间", name="upload_time")

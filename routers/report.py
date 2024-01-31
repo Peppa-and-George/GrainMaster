@@ -18,7 +18,9 @@ async def filter_quality_api(
     year: Optional[int] = Query(None, description="年份"),
     batch: Optional[int] = Query(None, description="批次"),
     location_name: Optional[str] = Query(None, description="位置"),
-    report_status: Optional[str] = Query(None, description="质检状态"),
+    report_status: Optional[str] = Query(
+        None, description="报告上传状态", examples=["已上传", "未上传"]
+    ),
     order_field: str = Query("id", description="排序字段"),
     order_desc: Literal["asc", "desc"] = Query("asc", description="是否降序"),
     page: int = Query(1, description="页码"),
@@ -26,6 +28,10 @@ async def filter_quality_api(
 ):
     """
     # 筛选质报告
+    - **year**: 年份, 可选
+    - **batch**: 批次, 可选
+    - **location_name**: 位置, 可选
+    - **report_status**: 报告上传状态, 可选, 一般设置为"已上传"和"为上传"
     - **order_field**: 排序字段, 默认为id
     - **order_desc**: 是否降序, 默认为asc
     - **page**: 页码, 默认为1
@@ -122,7 +128,7 @@ async def update_quality(
 
 @report_router.delete("/delete_report", summary="删除质报告")
 async def delete_quality(
-    report_id: int = Body(..., description="质检报告id"),
+    report_id: int = Query(..., description="质检报告id"),
 ):
     """
     # 删除质报告

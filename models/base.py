@@ -303,6 +303,7 @@ class CameraSchema(BaseModel):
     address: Optional[str] = Field(description="摄像头地址", default=None)
     location: Optional[str] = Field(description="摄像头位置", default=None)
     stream_url: Optional[str] = Field(description="摄像头流地址", default=None)
+    token: Optional[str] = Field(description="access_token", default=None)
     expire_time: Optional[datetime] = Field(description="摄像头过期时间", default=None)
     update_time: datetime = Field(description="更新时间")
     create_time: datetime = Field(description="创建时间")

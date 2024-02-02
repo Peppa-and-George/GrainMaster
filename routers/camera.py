@@ -173,6 +173,7 @@ def update_token():
                         status=camera["status"],
                         expire_time=date_string_to_datetime(camera["expire_time"]),
                         stream_url=camera["url"],
+                        token=camera["token"]
                     )
                     session.add(cam)
                 elif camera["status"] == 0:  # 离线设备没有
@@ -254,3 +255,5 @@ async def delete_camera(
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST, content={"message": "删除失败"}
             )
+
+

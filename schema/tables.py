@@ -73,6 +73,7 @@ class Camera(Base):
     location = Column(String(128), name="location", comment="摄像头位置")
     stream_url = Column(String(255), name="stream_url", comment="m3u8流地址")
     expire_time = Column(DateTime, name="expire_time", comment="过期时间")
+    token = Column(Text, nullable=True, name="token", comment="access_token")
 
     update_time = Column(
         DateTime,
@@ -636,3 +637,7 @@ class Quality(Base):
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="qualities", foreign_keys=[plan_id]
     )
+
+
+# from schema.database import engine
+# Base.metadata.create_all(engine)

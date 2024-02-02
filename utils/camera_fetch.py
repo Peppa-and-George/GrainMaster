@@ -49,7 +49,7 @@ def get_all_camera_m3u8url():
             data = get_camera_m3u8url(token, camera["deviceSerial"])
             url = data["url"]
             expire_time = data["expireTime"]    # expire_time 应该是摄像头m3u8url的过期时间
-            camera.update({"expire_time": expire_time, "url": url})
+            camera.update({"expire_time": expire_time, "url": url, "token": token})
     return camera_list
 
 

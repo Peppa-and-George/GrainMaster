@@ -38,45 +38,38 @@ async def get_plans(
         )
 
 
-@plan_router.get("/filter_plans", summary="筛选计划")
-async def filter_plans(
+@plan_router.get("/filter_plan", summary="筛选计划")
+async def filter_plan(
     year: Optional[int] = Query(None, description="年份"),
     batch: Optional[int] = Query(None, description="批次"),
-    location_name: Optional[str] = Query(None, description="基地名称"),
+    location: Optional[str] = Query(None, description="基地名称"),
+    customized: Optional[str] = Query(None, description="基地类型"),
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
     page: int = Query(1, description="页码"),
     page_size: int = Query(10, description="每页数量"),
 ):
-    try:
-        with SessionLocal() as db:
-            query = db.query(Plan).join(Location, Plan.location_id == Location.id)
-            if location_name:
-                query = query.filter(Location.name == location_name)
-            if year:
-                query = query.filter(Plan.year == year)
-            if batch:
-                query = query.filter(Plan.batch == batch)
-            plans = query.all()
-            if not plans:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="计划不存在"
-                )
-            response = page_with_order(
-                schema=PlanSchema,
-                query=query,
-                page=page,
-                page_size=page_size,
-                order_field=order_field,
-                order=order,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "查询成功", "data": response},
-            )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+    with SessionLocal() as db:
+        query = db.query(Plan).join(Location, Plan.location_id == Location.id)
+        if location:
+            query = query.filter(Location.name == location)
+        if customized:
+            query = query.filter(Location.customized == customized)
+        if year:
+            query = query.filter(Plan.year == year)
+        if batch:
+            query = query.filter(Plan.batch == batch)
+        response = page_with_order(
+            schema=PlanSchema,
+            query=query,
+            page=page,
+            page_size=page_size,
+            order_field=order_field,
+            order=order,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "查询成功", "data": response},
         )
 
 
@@ -179,46 +172,6 @@ async def delete_plan(
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"code": 0, "message": "删除成功"},
-            )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
-
-
-@plan_router.get("/filter_plan", summary="筛选计划")
-async def filter_plan(
-    year: int | None = Query(None, description="年份"),
-    location: str | None = Query(None, description="基地名称"),
-    order_field: str = Query("id", description="排序字段"),
-    order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
-    page: int = Query(1, description="页码"),
-    page_size: int = Query(10, description="每页数量"),
-):
-    try:
-        with SessionLocal() as db:
-            query = db.query(Plan)
-            if location:
-                location_id = get_location_id_by_name(location)
-                query = query.filter(Plan.location_id == location_id)
-            if year:
-                query = query.filter(Plan.year == year)
-            plans = query.all()
-            if not plans:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="计划不存在"
-                )
-            response = page_with_order(
-                schema=PlanSchema,
-                query=query,
-                page=page,
-                page_size=page_size,
-                order_field=order_field,
-                order=order,
-            )
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "查询成功", "data": response},
             )
     except Exception as e:
         raise HTTPException(

@@ -126,7 +126,7 @@ async def add_transport_api(
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加错误"},
+                content={"code": 0, "message": "添加成功"},
             )
     except Exception as e:
         return JSONResponse(

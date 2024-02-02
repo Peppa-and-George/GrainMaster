@@ -33,13 +33,13 @@ class ProductSchema(BaseModel):
 
 class LocationSchema(BaseModel):
     id: int = Field(description="地址id")
-    name: str = Field(description="地址名称")
-    type: str = Field(description="位置类型")
-    detail: str = Field(description="位置详情")
-    longitude: float = Field(description="经度")
-    latitude: float = Field(description="纬度")
-    area: float = Field(description="面积")
-    customized: str = Field(description="是否定制")
+    name: Optional[str] = Field(description="地址名称")
+    type: Optional[str] = Field(description="位置类型")
+    detail: Optional[str] = Field(description="位置详情")
+    longitude: Optional[float] = Field(description="经度")
+    latitude: Optional[float] = Field(description="纬度")
+    area: Optional[float] = Field(description="面积")
+    customized: Optional[str] = Field(description="是否定制")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
@@ -57,6 +57,7 @@ class PlanSchema(BaseModel):
     year: int | None = Field(description="年份")
     batch: int | None = Field(description="批次")
     total_product: int | None = Field(description="总产量(L)")
+    total_material: Optional[int] = Field(description="总材料(L)")
     surplus_product: int | None = Field(description="剩余产量(L)")
     notices: str | None = Field(description="备注")
     create_time: datetime | None = Field(description="创建时间")
@@ -317,11 +318,11 @@ class CameraSchema(BaseModel):
 class QualitySchema(BaseModel):
     id: int = Field(description="质检报告ID")
     plan_id: int = Field(description="计划ID")
-    name: str = Field(description="质检报告名称")
+    name: Optional[str] = Field(description="质检报告名称")
     people: Optional[str] = Field(description="质检人员", default=None)
     status: Optional[str] = Field(description="质检状态", default=None)
     report_url: Optional[str] = Field(description="质检报告地址", default=None)
-    upload_time: datetime = Field(description="上传时间")
+    upload_time: Optional[datetime] = Field(description="上传时间")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
@@ -329,6 +330,6 @@ class QualitySchema(BaseModel):
 
     @field_serializer("create_time", "update_time", "upload_time")
     def format_time(self, v: Any) -> Any:
-        return v.strftime("%Y-%m-%d %H:%M:%S")
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)

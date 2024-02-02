@@ -10,6 +10,8 @@ from sqlalchemy import (
     Boolean,
     Text,
     Float,
+    PrimaryKeyConstraint,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped
 
@@ -238,10 +240,8 @@ class Location(Base):
     detail = Column(String(128), nullable=False, comment="位置详情", name="detail")
     longitude = Column(Float, nullable=False, comment="经度", name="longitude")
     latitude = Column(Float, nullable=False, comment="纬度", name="latitude")
-    area = Column(Float, nullable=True, comment="面积", name="area")
-    customized: str = Column(
-        String(16), nullable=True, comment="是否定制", name="customized"
-    )
+    area = Column(Float, comment="面积", name="area")
+    customized: str = Column(String(16), comment="是否定制", name="customized")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
@@ -303,6 +303,11 @@ class Plan(Base):
         "LogisticsPlan", back_populates="plan"
     )
     qualities: Mapped[List["Quality"]] = relationship("Quality", back_populates="plan")
+
+    __table_args__ = (
+        UniqueConstraint("year", "batch", "location_id", name="unique_plan"),
+        {},
+    )
 
 
 class Order(Base):
@@ -414,6 +419,11 @@ class PlanSegmentRelationship(Base):
     )
     segment: Mapped["Segment"] = relationship(
         "Segment", back_populates="plans", foreign_keys=[segment_id]
+    )
+
+    __table_args__ = (
+        UniqueConstraint("plan_id", "segment_id", name="unique_plan"),
+        {},
     )
 
 

@@ -12,6 +12,7 @@ from fastapi import (
     Form,
 )
 from fastapi.responses import JSONResponse
+from sqlalchemy import desc
 
 from dependency.videos import save_video, delete_video
 from schema.tables import Segment, PlantOperate, PlanSegmentRelationship, Plan, Location
@@ -19,7 +20,7 @@ from schema.common import page_with_order
 from schema.database import SessionLocal
 from dependency.upload_image import save_image, delete_image
 
-from models.base import OperationSchema, PlanSegmentRelationshipSchema
+from models.base import PlanSegmentRelationshipSchema
 
 plant_router = APIRouter()
 
@@ -52,18 +53,39 @@ async def get_plant_operate_api(
                 query = query.filter(Segment.id == segment_id)
             elif segment_name:
                 query = query.filter(Segment.name == segment_name)
+            total = query.count()
+            query = query.order_by(getattr(PlantOperate, order_field))
+            if order == "desc":
+                query = desc(query)
 
-            response = page_with_order(
-                schema=OperationSchema,
-                query=query,
-                page=page,
-                page_size=page_size,
-                order_field=order_field,
-                order=order,
+            query = query.offset((page - 1) * page_size).limit(page_size)
+
+            response = []
+            operations = []
+            for item in query.all():
+                operation_name = item.name
+                index = item.index
+                operations.append({"operation_name": operation_name, "index": index})
+            segment_name = query.first().segment.name
+            response.append(
+                {
+                    "segment_name": segment_name,
+                    "operations": operations,
+                }
             )
+            page = (
+                total // page_size + 1 if total % page_size != 0 else total // page_size
+            )
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "查询成功", "data": response},
+                content={
+                    "code": 0,
+                    "message": "查询成功",
+                    "total": total,
+                    "page": page,
+                    "data": response,
+                },
             )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -328,6 +350,7 @@ async def add_segment_video_api(
             )
         video_name = save_video(video)
         plan_segment.video_uri = video_name
+        plan_segment.status = "已上传"
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -366,6 +389,7 @@ async def update_segment_video_api(
             delete_video(plan_segment.video_uri)
         video_name = save_video(video)
         plan_segment.video_uri = video_name
+        plan_segment.status = "已上传"
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,

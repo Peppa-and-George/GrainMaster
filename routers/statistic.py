@@ -22,6 +22,15 @@ async def statistic_clients_info_api():
     with SessionLocal() as db:
         res = db.query(Client.type, func.count(Client.id)).group_by(Client.type).all()
         total = db.query(func.count(Client.id)).scalar()
+        if total == 0:
+            return {
+                "code": 0,
+                "message": "success",
+                "data": {
+                    "total": 0,
+                    "detail": "无数据",
+                },
+            }
         data = [
             {
                 "type": item[0],

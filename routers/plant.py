@@ -65,19 +65,22 @@ async def get_plant_operate_api(
 
             query = query.offset((page - 1) * page_size).limit(page_size)
 
-            response = []
+            data = {}
             operations = []
             for item in query.all():
                 operation_name = item.name
+                segment_name = item.segment.name
                 index = item.index
-                operations.append({"operation_name": operation_name, "index": index})
-            segment_name = query.first().segment.name
-            response.append(
-                {
-                    "segment_name": segment_name,
-                    "operations": operations,
-                }
-            )
+                if segment_name not in data:
+                    data[segment_name] = []
+                data[segment_name].append(
+                    {"operation_name": operation_name, "index": index}
+                )
+            response = [
+                {"segment_name": segment_name, "operations": data[segment_name]}
+                for segment_name in data
+            ]
+
             page = (
                 total // page_size + 1 if total % page_size != 0 else total // page_size
             )

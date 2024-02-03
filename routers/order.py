@@ -12,7 +12,7 @@ from schema.common import page_with_order
 order_router = APIRouter()
 
 
-@order_router.get("get_orders", summary="获取订单列表")
+@order_router.get("/get_orders", summary="获取订单列表")
 async def get_orders(
     year: int = Query(None, description="年份"),
     batch: int = Query(None, description="批次"),
@@ -47,9 +47,9 @@ async def get_orders(
                 .join(Client, Order.client_id == Client.id)
             )
             if year:
-                query = query.filter(Order.year == year)
+                query = query.filter(Plan.year == year)
             if batch:
-                query = query.filter(Order.batch == batch)
+                query = query.filter(Plan.batch == batch)
             if order_status:
                 query = query.filter(Order.status == order_status)
             if start_time:
@@ -84,7 +84,7 @@ async def get_orders(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
-@order_router.get("filter_orders_by_client", summary="根据客户获取订单列表")
+@order_router.get("/filter_orders_by_client", summary="根据客户获取订单列表")
 async def filter_orders_by_client(
     client_id: int = Query(..., description="客户id"),
     page: int = Query(1, description="页码"),
@@ -116,7 +116,7 @@ async def filter_orders_by_client(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
-@order_router.post("add_order", summary="添加订单")
+@order_router.post("/add_order", summary="添加订单")
 async def add_order(
     plan_id: int = Body(..., description="计划id"),
     client_id: int = Body(..., description="客户id"),
@@ -154,7 +154,7 @@ async def add_order(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
-@order_router.put("complete_order", summary="完成订单")
+@order_router.put("/complete_order", summary="完成订单")
 async def complete_order(
     order_id: int = Query(..., description="订单id"),
 ):
@@ -178,7 +178,7 @@ async def complete_order(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
-@order_router.put("update_order", summary="更新订单")
+@order_router.put("/update_order", summary="更新订单")
 async def update_order_status(
     order_id: int = Body(..., description="订单id"),
     order_status: str = Body(None, description="订单状态"),
@@ -223,7 +223,7 @@ async def update_order_status(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
-@order_router.delete("delete_order", summary="删除订单")
+@order_router.delete("/delete_order", summary="删除订单")
 async def delete_order(
     order_id: int = Body(..., description="订单id"),
 ):

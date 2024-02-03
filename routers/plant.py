@@ -54,6 +54,11 @@ async def get_plant_operate_api(
             elif segment_name:
                 query = query.filter(Segment.name == segment_name)
             total = query.count()
+            if total == 0:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "未查询到数据"},
+                )
             query = query.order_by(getattr(PlantOperate, order_field))
             if order == "desc":
                 query = desc(query)

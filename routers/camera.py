@@ -163,9 +163,10 @@ def update_token():
                         .filter(Camera.sn == camera["deviceSerial"])
                         .first()
                     )
-                    cam.expired = date_string_to_datetime(camera["expire_time"])
+                    if cam.status == 1:
+                        cam.expired = date_string_to_datetime(camera["expire_time"])
+                        cam.stream_url = camera["url"]
                     cam.status = camera["status"]
-                    cam.stream_url = camera["url"]
                 session.commit()
         else:
             # 没有摄像头数据

@@ -19,7 +19,8 @@ from routers.order import order_router
 from routers.camera import camera_router
 from routers.plant import plant_router
 from routers.report import report_router
-from routers.statistic import client_router
+from routers.client import client_router
+from routers.statistic import statistic_router
 from journal import log
 from auth import (
     jwt,
@@ -44,7 +45,7 @@ app.include_router(
     user_router, tags=["系统管理"], prefix="/user", dependencies=[Depends(oauth2_scheme)]
 )
 app.include_router(
-    client_router,
+    statistic_router,
     tags=["首页统计"],
     prefix="/statistic",
     dependencies=[Depends(oauth2_scheme)],

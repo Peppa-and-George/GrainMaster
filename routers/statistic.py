@@ -11,10 +11,10 @@ from schema.tables import (
 )
 from schema.database import SessionLocal
 
-client_router = APIRouter()
+statistic_router = APIRouter()
 
 
-@client_router.get("/statistic_clients_info", summary="统计客户信息")
+@statistic_router.get("/statistic_clients_info", summary="统计客户信息")
 async def statistic_clients_info_api():
     """
     # 统计客户信息
@@ -51,7 +51,7 @@ async def statistic_clients_info_api():
         }
 
 
-@client_router.get("/statistic_plan_info", summary="统计计划信息")
+@statistic_router.get("/statistic_plan_info", summary="统计计划信息")
 async def statistic_plan_info_api():
     """
     # 统计计划信息
@@ -73,7 +73,7 @@ async def statistic_plan_info_api():
         }
 
 
-@client_router.get("/statistic_camera_info", summary="统计摄像头信息")
+@statistic_router.get("/statistic_camera_info", summary="统计摄像头信息")
 async def statistic_camera_info_api():
     """
     # 统计摄像头信息
@@ -89,7 +89,7 @@ async def statistic_camera_info_api():
         }
 
 
-@client_router.get("/get_location_info", summary="获取位置信息")
+@statistic_router.get("/get_location_info", summary="获取位置信息")
 async def get_location_info_api():
     """
     # 获取位置信息

@@ -149,7 +149,7 @@ async def add_client(
                 category=category,
                 activate=activate,
                 is_deleted=False,
-                phone_num=phone_number,
+                phone_number=phone_number,
                 signing_people=signing_people,
                 signing_phone=signing_phone,
             )
@@ -209,7 +209,10 @@ async def update_client(
     client_id: int = Body(..., description="客户ID"),
     client_type: str | None = Body(None, description="客户类型"),
     account: str | None = Body(None, description="客户账号"),
-    name: str | None = Body(None, description="姓名"),
+    name: str | None = Body(None, description="账号名"),
+    phone_number: str | None = Body(None, description="绑定手机号"),
+    signing_people: str | None = Body(None, description="签约人"),
+    signing_phone: str | None = Body(None, description="签约人手机号"),
     category: str | None = Body(None, description="客户类别"),
     activate: bool | None = Body(None, description="客户状态"),
 ):
@@ -219,7 +222,10 @@ async def update_client(
     - **client_id**: 客户ID
     - **client_type**: 客户类型
     - **account**: 客户账号
-    - **name**: 姓名
+    - **name**: 账号名
+    - **phone_number**: 绑定手机号
+    - **signing_people**: 签约人
+    - **signing_phone**: 签约人手机号
     - **category**: 客户类别
     - **activate**: 客户是否激活，bool类型
     """
@@ -240,6 +246,13 @@ async def update_client(
                 client.category = category
             if activate is not None:
                 client.activate = activate
+            if phone_number:
+                client.phone_number = phone_number
+            if signing_people:
+                client.signing_people = signing_people
+            if signing_phone:
+                client.signing_phone = signing_phone
+
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,

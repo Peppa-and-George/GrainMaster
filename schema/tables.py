@@ -119,9 +119,18 @@ class Client(Base):
     type = Column(String(32), nullable=False, comment="客户类型", name="type")
 
     account = Column(
-        String(32), nullable=False, comment="账号", name="account", unique=True
+        String(32), nullable=True, comment="账号", name="account", unique=True
     )
     name = Column(String(32), nullable=False, comment="账号名", name="name")
+    phone_number = Column(
+        String(32), nullable=True, comment="绑定手机号", name="phone_number"
+    )
+    signing_people = Column(
+        String(32), nullable=True, comment="签约人", name="signing_people"
+    )
+    signing_phone = Column(
+        String(32), nullable=True, comment="签约人电话", name="signing_phone"
+    )
     activate = Column(
         Boolean, nullable=False, default=False, comment="激活状态", name="activate"
     )

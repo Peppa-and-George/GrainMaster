@@ -112,8 +112,10 @@ async def get_client_addresses(
 @client_router.post("/add_client", summary="添加客户")
 async def add_client(
     client_type: str = Body(..., description="客户类型"),
-    name: str = Body(..., description="姓名"),
-    phone_number: str = Body(..., description="手机号"),
+    name: str = Body(..., description="账号名"),
+    phone_number: str = Body(..., description="绑定手机号"),
+    signing_people: str = Body(..., description="签约人"),
+    signing_phone: str = Body(..., description="签约人手机号"),
     region: str = Body(..., description="地区"),
     address: str = Body(..., description="地址"),
     category: str = Body(default="", description="客户类别"),
@@ -145,6 +147,9 @@ async def add_client(
                 category=category,
                 activate=activate,
                 is_deleted=False,
+                phone_num=phone_number,
+                signing_people=signing_people,
+                signing_phone=signing_phone,
             )
             client.addresses.append(address)
             db.add(client)

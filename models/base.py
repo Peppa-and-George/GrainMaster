@@ -109,8 +109,12 @@ class AddressSchema(BaseModel):
 class ClientSchema(BaseModel):
     id: int = Field(description="客户ID")
     type: Optional[str] = Field(description="客户类型")
-    account: Optional[str] = Field(description="客户账号")
-    name: Optional[str] = Field(description="客户名称")
+    account: Optional[str] = Field(description="账号")
+    name: Optional[str] = Field(description="账号名")
+    phone_number: Optional[str] = Field(description="绑定手机号")
+    signing_people: Optional[str] = Field(description="签约人")
+    signing_phone: Optional[str] = Field(description="签约人手机号")
+
     activate: Optional[bool] = Field(description="是否激活", default=False)
     category: Optional[str] = Field(description="客户类别", default=None)
     delete_time: Optional[datetime] = Field(description="删除时间", default=None)

@@ -20,6 +20,25 @@ async def get_clients(
     page: int = Query(1, description="页码"),
     page_size: int = Query(10, description="每页数量"),
 ):
+    """
+    # 获取客户列表
+    ## 请求体字段：
+    - **order_field**: 排序字段
+    - **order**: 排序类型
+    - **page**: 页码
+    - **page_size**: 每页数量
+
+    ## 返回字段：
+    - **id**: 客户ID
+    - **type**: 客户类型
+    - **account**: 客户账号
+    - **name**: 客户名称
+    - **category**: 客户类别
+    - **activate**: 客户状态
+    - **create_time**: 创建时间
+    - **update_time**: 更新时间
+    - **delete_time**: 删除时间
+    """
     try:
         with SessionLocal() as db:
             query = db.query(Client).filter(Client.is_deleted == False)
@@ -49,6 +68,25 @@ async def get_client_addresses(
     page: int = Query(1, description="页码"),
     page_size: int = Query(10, description="每页数量"),
 ):
+    """
+    # 根据客户ID获取客户地址列表
+    ## 请求体字段：
+    - **client_id**: 客户ID
+    - **order_field**: 排序字段
+    - **order**: 排序类型
+    - **page**: 页码
+    - **page_size**: 每页数量
+
+    ## 返回字段：
+    - **id**: 地址ID
+    - **client_id**: 客户ID
+    - **name**: 客户名称
+    - **phone_num**: 客户手机号
+    - **region**: 客户地区
+    - **detail_address**: 客户详细地址
+    - **create_time**: 创建时间
+    - **update_time**: 更新时间
+    """
     try:
         with SessionLocal() as db:
             query = db.query(Address).filter(Address.client_id == client_id)
@@ -81,6 +119,17 @@ async def add_client(
     category: str = Body(default="", description="客户类别"),
     activate: bool = Body(False, description="客户状态"),
 ):
+    """
+    # 添加客户
+    ## 请求体字段：
+    - **client_type**: 客户类型
+    - **name**: 姓名
+    - **phone_number**: 手机号
+    - **region**: 地区
+    - **address**: 地址
+    - **category**: 客户类别
+    - **activate**: 客户是否激活，bool类型
+    """
     try:
         with SessionLocal() as db:
             address = Address(
@@ -95,6 +144,7 @@ async def add_client(
                 name=name,
                 category=category,
                 activate=activate,
+                is_deleted=False,
             )
             client.addresses.append(address)
             db.add(client)
@@ -118,6 +168,16 @@ async def update_client(
     category: str | None = Body(None, description="客户类别"),
     activate: bool | None = Body(None, description="客户状态"),
 ):
+    """
+    # 修改客户信息
+    ## 请求体字段：
+    - **client_id**: 客户ID
+    - **client_type**: 客户类型
+    - **account**: 客户账号
+    - **name**: 姓名
+    - **category**: 客户类别
+    - **activate**: 客户是否激活，bool类型
+    """
     try:
         with SessionLocal() as db:
             client = db.query(Client).filter(Client.id == client_id).first()
@@ -154,6 +214,15 @@ async def update_client_address(
     region: str | None = Body(None, description="地区"),
     address: str | None = Body(None, description="地址"),
 ):
+    """
+    # 修改客户地址信息
+    ## 请求体字段：
+    - **address_id**: 地址ID
+    - **name**: 姓名, 可选
+    - **phone_number**: 手机号, 可选
+    - **region**: 地区, 可选
+    - **address**: 地址, 可选
+    """
     try:
         with SessionLocal() as db:
             address_object = db.query(Address).filter(Address.id == address_id).first()

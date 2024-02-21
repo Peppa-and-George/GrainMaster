@@ -15,6 +15,10 @@ client_router = APIRouter()
 
 @client_router.get("/get_clients", summary="获取客户列表")
 async def get_clients(
+    fuzzy: bool = Query(False, description="模糊搜索"),
+    client_type: str | None = Query(None, description="客户类型"),
+    name: str | None = Query(None, description="账号名称"),
+    activate: bool | None = Query(None, description="激活状态"),
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
     page: int = Query(1, description="页码"),
@@ -23,6 +27,9 @@ async def get_clients(
     """
     # 获取客户列表
     ## 请求体字段：
+    - **client_type**: 客户类型
+    - **name**: 账号名称
+    - **activate**: 激活状态
     - **order_field**: 排序字段
     - **order**: 排序类型
     - **page**: 页码
@@ -42,6 +49,17 @@ async def get_clients(
     try:
         with SessionLocal() as db:
             query = db.query(Client).filter(Client.is_deleted == False)
+
+            if client_type:
+                query = query.filter(Client.type == client_type)
+            if name:
+                if fuzzy:
+                    query = query.filter(Client.name.like(f"%{name}%"))
+                else:
+                    query = query.filter(Client.name == name)
+            if activate is not None:
+                query = query.filter(Client.activate == activate)
+
             data = page_with_order(
                 schema=ClientSchema,
                 query=query,

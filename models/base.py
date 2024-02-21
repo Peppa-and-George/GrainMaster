@@ -123,7 +123,7 @@ class ClientSchema(BaseModel):
     update_time: datetime = Field(description="更新时间")
     addresses: Union[List[AddressSchema]] = Field(description="地址列表", default=[])
 
-    @field_serializer("create_time", "update_time")
+    @field_serializer("create_time", "update_time", "delete_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 

@@ -86,8 +86,17 @@ async def add_plan(
     year: int = Body(..., description="年份"),
     batch: int = Body(..., description="批次"),
     location_name: str = Body(..., description="基地名称"),
+    create_people: str = Body(..., description="创建人"),
     total_material: int = Body(..., description="总产量(L)"),
 ):
+    """
+    # 添加计划
+    - **year**: 年份
+    - **batch**: 批次
+    - **location_name**: 基地名称
+    - **create_people**: 创建人
+    - **total_material**: 总产量(L)
+    """
     try:
         with SessionLocal() as db:
             if location_name:
@@ -102,6 +111,7 @@ async def add_plan(
                 location_id=location_id,
                 total_material=total_material,
                 batch=batch,
+                create_people=create_people,
             )
             quality = Quality(
                 status="未上传",

@@ -164,10 +164,11 @@ def update_token():
                         .first()
                     )
                     if cam.status == 1:
-                        cam.expired = date_string_to_datetime(camera["expire_time"])
+                        cam.expire_time = date_string_to_datetime(camera["expire_time"])
                         cam.stream_url = camera["url"]
                     cam.status = camera["status"]
                 session.commit()
+                session.flush()
         else:
             # 没有摄像头数据
             camera_list = get_all_camera_m3u8url()

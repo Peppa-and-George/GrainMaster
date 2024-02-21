@@ -163,10 +163,11 @@ def update_token():
                         .filter(Camera.sn == camera["deviceSerial"])
                         .first()
                     )
+                    cam.status = camera["status"]
                     if cam.status == 1:
                         cam.expire_time = date_string_to_datetime(camera["expire_time"])
                         cam.stream_url = camera["url"]
-                    cam.status = camera["status"]
+                        cam.token = camera["token"]
                 session.commit()
                 session.flush()
         else:

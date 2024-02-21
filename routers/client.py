@@ -159,6 +159,44 @@ async def add_client(
         )
 
 
+@client_router.post("/add_client_address", summary="添加客户地址")
+async def add_client_address(
+    client_id: int = Body(..., description="客户ID"),
+    name: str = Body(..., description="姓名"),
+    phone_number: str = Body(..., description="手机号"),
+    region: str = Body(..., description="地区"),
+    address: str = Body(..., description="地址"),
+):
+    """
+    # 添加客户地址
+    ## 请求体字段：
+    - **client_id**: 客户ID
+    - **name**: 姓名
+    - **phone_number**: 手机号
+    - **region**: 地区
+    - **address**: 地址
+    """
+    try:
+        with SessionLocal() as db:
+            address = Address(
+                client_id=client_id,
+                name=name,
+                phone_num=phone_number,
+                region=region,
+                detail_address=address,
+            )
+            db.add(address)
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 0, "message": "添加成功"},
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
 @client_router.put("/update_client", summary="修改客户信息")
 async def update_client(
     client_id: int = Body(..., description="客户ID"),

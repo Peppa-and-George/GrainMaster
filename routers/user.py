@@ -15,6 +15,8 @@ router = APIRouter()
 
 @router.get("/get_users", summary="获取所有用户信息")
 async def get_users_api(
+    fuzzy: bool = Query(False, description="模糊搜索"),
+    name: str | None = Query(None, description="用户名"),
     order_field: str = Query("id", description="排序字段"),
     order_desc: Literal["asc", "desc"] = Query("asc", description="是否降序"),
     page: int = Query(1, description="页码"),
@@ -22,6 +24,8 @@ async def get_users_api(
 ):
     """
     # 获取所有用户信息
+    - **name**: 用户名
+    - **fuzzy**: 是否模糊搜索, 默认为False
     - **order_field**: 排序字段, 默认为id
     - **order_desc**: 是否降序, 默认为asc
     - **page**: 页码, 默认为1
@@ -29,6 +33,12 @@ async def get_users_api(
     """
     with SessionLocal() as db:
         query = db.query(User)
+
+        if name:
+            if fuzzy:
+                query = query.filter(User.name.like(f"%{name}%"))
+            else:
+                query = db.query(User).filter(User.name == name)
         response = page_with_order(
             schema=UserInfoSchema,
             query=query,

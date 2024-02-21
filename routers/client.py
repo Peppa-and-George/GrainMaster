@@ -125,8 +125,10 @@ async def add_client(
     # 添加客户
     ## 请求体字段：
     - **client_type**: 客户类型
-    - **name**: 姓名
-    - **phone_number**: 手机号
+    - **name**: 账号名
+    - **phone_number**: 绑定手机号
+    - **signing_people**: 签约人
+    - **signing_phone**: 签约人手机号
     - **region**: 地区
     - **address**: 地址
     - **category**: 客户类别

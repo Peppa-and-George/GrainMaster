@@ -43,6 +43,8 @@ async def get_camera(
             order_field=order_field,
             order=order,
         )
+        for item in response["data"]:
+            item.update({"accessToken": item["token"], "access_token": item["token"]})
 
     return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
@@ -110,6 +112,7 @@ async def filter_camera(
     - **page**: 页码
     - **page_size**: 每页数量
     """
+    update_token()
     with SessionLocal() as session:
         query = session.query(Camera)
         if name:
@@ -141,6 +144,8 @@ async def filter_camera(
             order_field=order_field,
             order=order,
         )
+        for item in response["data"]:
+            item.update({"accessToken": item["token"], "access_token": item["token"]})
     return JSONResponse(status_code=status.HTTP_200_OK, content=response)
 
 
@@ -173,7 +178,7 @@ def update_token():
                         status=camera["status"],
                         expire_time=date_string_to_datetime(camera["expire_time"]),
                         stream_url=camera["url"],
-                        token=camera["token"]
+                        token=camera["token"],
                     )
                     session.add(cam)
                 elif camera["status"] == 0:  # 离线设备没有
@@ -255,5 +260,3 @@ async def delete_camera(
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST, content={"message": "删除失败"}
             )
-
-

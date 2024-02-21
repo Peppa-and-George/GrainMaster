@@ -1,10 +1,9 @@
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query, status, Body
-from starlette.responses import JSONResponse
-
-from models.base import UserSchema
-from auth import get_base64_password
+from fastapi import APIRouter, Query, status, Body
+from fastapi.responses import JSONResponse
+from models.base import UserInfoSchema
+from auth import get_base64_password, verify_password
 
 from schema.database import SessionLocal
 from schema.common import page_with_order
@@ -31,7 +30,7 @@ async def get_users_api(
     with SessionLocal() as db:
         query = db.query(User)
         response = page_with_order(
-            schema=UserSchema,
+            schema=UserInfoSchema,
             query=query,
             order_field=order_field,
             order=order_desc,
@@ -48,7 +47,7 @@ async def get_users_api(
 async def create_user(
     username: str = Body(..., description="用户名"),
     password: str = Body(..., description="密码"),
-    phone_number: int = Body(..., description="手机号"),
+    phone_number: str = Body(..., description="手机号"),
 ):
     """
     # 创建用户
@@ -106,6 +105,38 @@ async def edit_user(
         )
 
 
+@router.post("/modify_password", summary="修改密码")
+def modify_password(
+    user_id: int = Body(..., description="用户ID"),
+    old_password: str = Body(..., description="旧密码"),
+    new_password: str = Body(..., description="新密码"),
+):
+    """
+    # 修改密码
+    - **user_id**: 用户ID
+    - **old_password**: 旧密码
+    - **new_password**: 新密码
+    """
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "用户不存在"},
+            )
+        if not verify_password(old_password, user.hashed_passwd):
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "旧密码错误"},
+            )
+        user.hashed_passwd = get_base64_password(new_password)
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "密码修改成功"},
+        )
+
+
 @router.post("/reset_password", summary="重置密码")
 def reset_password(
     user_id: int = Body(..., description="用户ID"),
@@ -123,9 +154,30 @@ def reset_password(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "用户不存在"},
             )
-        user.password = get_base64_password(password)
+        user.hashed_passwd = get_base64_password(password)
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"code": 0, "message": "密码重置成功"},
+        )
+
+
+@router.delete("/delete_user", summary="删除用户")
+def delete_user(user_id: int = Query(..., description="用户ID", examples=[1])):
+    """
+    # 删除用户
+    - **user_id**: 用户ID
+    """
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "用户不存在"},
+            )
+        db.delete(user)
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "用户删除成功"},
         )

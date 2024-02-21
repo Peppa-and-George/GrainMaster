@@ -10,7 +10,21 @@ class Token(BaseModel):
 
 class UserSchema(BaseModel):
     name: str
-    phone_number: int
+    phone_number: str
+
+
+class UserInfoSchema(BaseModel):
+    id: int = Field(description="用户ID")
+    name: str = Field(description="用户名")
+    phone_number: str = Field(description="手机号")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductSchema(BaseModel):

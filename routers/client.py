@@ -2,13 +2,15 @@ from datetime import datetime
 from typing import Literal
 import uuid
 
-from fastapi import APIRouter, Query, HTTPException, status, Body
+from fastapi import APIRouter, Query, HTTPException, status, Body, Request
 from fastapi.responses import JSONResponse
 
-from schema.common import page_with_order, transform_schema
+from schema.common import page_with_order
 from schema.tables import Client, Address
 from schema.database import SessionLocal
 from models.base import ClientSchema, AddressSchema
+
+from auth import decode_token
 
 client_router = APIRouter()
 
@@ -129,13 +131,14 @@ async def get_client_addresses(
 
 @client_router.post("/add_client", summary="添加客户")
 async def add_client(
+    request: Request,
     client_type: str = Body(..., description="客户类型"),
     name: str = Body(..., description="账号名"),
     phone_number: str = Body(..., description="绑定手机号"),
-    signing_people: str = Body(..., description="签约人"),
-    signing_phone: str = Body(..., description="签约人手机号"),
     region: str = Body(..., description="地区"),
     address: str = Body(..., description="地址"),
+    signing_people: str | None = Body(None, description="签约人"),
+    signing_phone: str | None = Body(None, description="签约人手机号"),
     category: str = Body(default="", description="客户类别"),
     activate: bool = Body(False, description="客户状态"),
 ):
@@ -145,13 +148,16 @@ async def add_client(
     - **client_type**: 客户类型
     - **name**: 账号名
     - **phone_number**: 绑定手机号
-    - **signing_people**: 签约人
-    - **signing_phone**: 签约人手机号
     - **region**: 地区
     - **address**: 地址
     - **category**: 客户类别
     - **activate**: 客户是否激活，bool类型
     """
+    if signing_people is None or signing_phone is None:
+        token = request.headers.get("Authorization")
+        user_info = decode_token(token.replace("Bearer ", ""))
+        signing_people = user_info.get("sub")
+        signing_phone = user_info.get("phone_number")
     try:
         with SessionLocal() as db:
             client = Client(

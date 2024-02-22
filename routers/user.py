@@ -1,9 +1,9 @@
 from typing import Literal
 
-from fastapi import APIRouter, Query, status, Body
+from fastapi import APIRouter, Query, status, Body, Request, HTTPException
 from fastapi.responses import JSONResponse
 from models.base import UserInfoSchema
-from auth import get_base64_password, verify_password
+from auth import get_base64_password, verify_password, decode_token
 
 from schema.database import SessionLocal
 from schema.common import page_with_order
@@ -11,6 +11,20 @@ from schema.tables import User
 
 
 router = APIRouter()
+
+@router.get("/get_current_user", summary="获取当前用户信息")
+async def get_current_user(request: Request):
+    """
+    # 获取当前用户信息
+    """
+    token = request.headers.get("Authorization")
+    if not token:
+        raise HTTPException(500, "请传入一个token")
+    current_user = decode_token(token.replace("Bearer ", ""))
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"code": 0, "message": "success", "data": current_user},
+    )
 
 
 @router.get("/get_users", summary="获取所有用户信息")

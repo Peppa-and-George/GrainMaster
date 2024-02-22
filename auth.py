@@ -32,3 +32,7 @@ def get_password_hash(password):
 
 def get_base64_password(password):
     return base64.b64encode(pwd_context.hash(password).encode()).decode()
+
+
+def decode_token(token):
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

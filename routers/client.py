@@ -5,10 +5,10 @@ import uuid
 from fastapi import APIRouter, Query, HTTPException, status, Body, Request
 from fastapi.responses import JSONResponse
 
-from schema.common import page_with_order
+from schema.common import page_with_order, query_with_page_and_order, transform_schema
 from schema.tables import Client, Address
 from schema.database import SessionLocal
-from models.base import ClientSchema, AddressSchema
+from models.base import ClientSchema, AddressSchema, OrderSchema
 
 from auth import decode_token
 
@@ -62,17 +62,51 @@ async def get_clients(
             if activate is not None:
                 query = query.filter(Client.activate == activate)
 
-            data = page_with_order(
-                schema=ClientSchema,
-                query=query,
-                page=page,
-                page_size=page_size,
-                order_field=order_field,
-                order=order,
+            # data = page_with_order(
+            #     schema=ClientSchema,
+            #     query=query,
+            #     page=page,
+            #     page_size=page_size,
+            #     order_field=order_field,
+            #     order=order,
+            # )
+
+            total = query.count()
+            total_page = (
+                total // page_size + 1 if total % page_size != 0 else total // page_size
             )
+            query = query_with_page_and_order(
+                query, page, page_size, order_field, order
+            )
+            clients = query.all()
+            data = []
+            for client in clients:
+                client_dict = ClientSchema.model_validate(
+                    client, from_attributes=True
+                ).model_dump()
+                client_dict.update({"order_number": client.orders.count()})
+                client_dict.update(
+                    {"order": transform_schema(OrderSchema, client.orders)}
+                )
+                data.append(client_dict)
+
+            response = {
+                "total": total,
+                "total_page": total_page,
+                "page": page,
+                "page_size": page_size,
+                "order_field": order_field,
+                "order": order,
+                "data": data,
+                **{
+                    "code": 0,
+                    "message": "查询成功",
+                },
+            }
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content=data,
+                content=response,
             )
     except Exception as e:
         raise HTTPException(

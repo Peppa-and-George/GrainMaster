@@ -154,12 +154,6 @@ async def add_client(
     """
     try:
         with SessionLocal() as db:
-            address = Address(
-                name=name,
-                phone_num=phone_number,
-                region=region,
-                detail_address=address,
-            )
             client = Client(
                 type=client_type,
                 account=str(uuid.uuid4()),
@@ -170,8 +164,9 @@ async def add_client(
                 phone_number=phone_number,
                 signing_people=signing_people,
                 signing_phone=signing_phone,
+                region=region,
+                address=address,
             )
-            client.addresses.append(address)
             db.add(client)
             db.commit()
             return JSONResponse(
@@ -233,6 +228,8 @@ async def update_client(
     signing_phone: str | None = Body(None, description="签约人手机号"),
     category: str | None = Body(None, description="客户类别"),
     activate: bool | None = Body(None, description="客户状态"),
+    region: str | None = Body(None, description="地区"),
+    address: str | None = Body(None, description="地址"),
 ):
     """
     # 修改客户信息
@@ -246,6 +243,8 @@ async def update_client(
     - **signing_phone**: 签约人手机号
     - **category**: 客户类别
     - **activate**: 客户是否激活，bool类型
+    - **region**: 地区
+    - **address**: 地址
     """
     try:
         with SessionLocal() as db:
@@ -270,6 +269,10 @@ async def update_client(
                 client.signing_people = signing_people
             if signing_phone:
                 client.signing_phone = signing_phone
+            if region:
+                client.region = region
+            if address:
+                client.address = address
 
             db.commit()
             return JSONResponse(

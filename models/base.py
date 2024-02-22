@@ -112,6 +112,8 @@ class ClientSchema(BaseModel):
     account: Optional[str] = Field(description="账号")
     name: Optional[str] = Field(description="账号名")
     phone_number: Optional[str] = Field(description="绑定手机号")
+    region: Optional[str] = Field(description="地区")
+    address: Optional[str] = Field(description="地址")
     signing_people: Optional[str] = Field(description="签约人")
     signing_phone: Optional[str] = Field(description="签约人手机号")
 

@@ -131,6 +131,8 @@ class Client(Base):
     signing_phone = Column(
         String(32), nullable=True, comment="签约人电话", name="signing_phone"
     )
+    region = Column(String(64), nullable=True, comment="所在地区", name="region")
+    address = Column(String(642), nullable=True, comment="详细地址", name="address")
     activate = Column(
         Boolean, nullable=False, default=False, comment="激活状态", name="activate"
     )

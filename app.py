@@ -21,6 +21,8 @@ from routers.plant import plant_router
 from routers.report import report_router
 from routers.client import client_router
 from routers.statistic import statistic_router
+from routers.company import company_router
+from routers.customized_information import customized_information_router
 from journal import log
 from auth import (
     jwt,
@@ -117,6 +119,20 @@ app.include_router(
     dependencies=[Depends(oauth2_scheme)],
 )
 
+app.include_router(
+    company_router,
+    tags=["公司管理", "内容发布"],
+    prefix="/company",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    customized_information_router,
+    tags=["关于定制", "内容发布"],
+    prefix="/customized_information",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
 
 async def sieve_middleware(request: Request, call_next):
     s_time = time.perf_counter()
@@ -179,7 +195,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.name, "phone_number": user.phone_number, 'id': user.id}, expires_delta=access_token_expires
+            data={"sub": user.name, "phone_number": user.phone_number, "id": user.id},
+            expires_delta=access_token_expires,
         )
         return {"access_token": access_token, "token_type": "bearer"}
 
@@ -192,6 +209,6 @@ def runserver(workers):
         host="0.0.0.0",
         port=8082,
         workers=workers,
-        log_level="critical",
+        # log_level="critical",
         # reload=True
     )

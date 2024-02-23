@@ -650,5 +650,94 @@ class Quality(Base):
     )
 
 
-# from schema.database import engine
-# Base.metadata.create_all(engine)
+class CompanyInfo(Base):
+    # 公司信息
+    __tablename__ = "company_info"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(64), comment="公司名称", name="name")
+    address = Column(String(256), comment="公司地址", name="address")
+    phone = Column(String(64), comment="公司电话", name="phone")
+    email = Column(String(64), comment="公司邮箱", name="email")
+    logo = Column(String(64), comment="公司logo", name="logo")
+    introduction = Column(Text, comment="公司介绍", name="introduction")
+    process_flow = Column(Text, comment="工艺流程", name="process_flow")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+
+class CustomizedInformation(Base):
+    # 定制信息
+    __tablename__ = "customized_information"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    icon = Column(String(64), comment="定制图片", name="icon")
+    introduction = Column(Text, comment="定制介绍", name="introduction")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+
+class Banner(Base):
+    __tablename__ = "banner"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(64), comment="名称", name="name")
+    icon = Column(String(64), comment="图片", name="icon")
+    introduction = Column(String(64), comment="Banner详情", name="introduction")
+    status = Column(Boolean, comment="是否上架", name="status")
+    synchronize = Column(
+        Boolean,
+        nullable=False,
+        comment="是否同步",
+        default=False,
+        name="synchronize",
+    )
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+
+class Video(Base):
+    __tablename__ = "video"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(64), comment="视频标题", name="title")
+    icon = Column(String(64), comment="图片", name="icon")
+    video = Column(String(64), comment="视频地址", name="video")
+    introduction = Column(String(64), comment="视频详情", name="introduction")
+    synchronize = Column(
+        Boolean,
+        nullable=False,
+        comment="是否同步",
+        default=False,
+        name="synchronize",
+    )
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )

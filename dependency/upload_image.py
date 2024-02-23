@@ -2,8 +2,7 @@ import os
 import uuid
 from base64 import b64decode
 
-#
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 
 from config import PRODUCT_DIR
 
@@ -44,3 +43,16 @@ def delete_image(icon: str) -> None:
         os.remove(f"{PRODUCT_DIR}/{icon}")
     except Exception as e:
         raise HTTPException(status_code=500, detail="删除产品图片失败, 错误信息: " + str(e))
+
+
+def save_upload_image(image: UploadFile):
+    """
+    保存上传的图片
+    :param image: 上传的图片
+    :return:
+    """
+    image_hash = uuid.uuid4().hex
+    filename = f"{image_hash}{os.path.splitext(image.filename)[-1]}"
+    with open(f"{PRODUCT_DIR}/{filename}", "wb") as f:
+        f.write(image.file.read())
+    return filename

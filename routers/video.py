@@ -5,7 +5,7 @@ from fastapi.routing import APIRouter
 from fastapi import Form, UploadFile, File, status
 from fastapi.responses import JSONResponse
 
-from dependency.upload_image import save_upload_image, delete_image
+from dependency.image import save_upload_image, delete_image
 from dependency.videos import save_video, delete_video
 from schema.tables import Video
 from schema.database import SessionLocal

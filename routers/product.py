@@ -8,7 +8,7 @@ from schema.common import page_with_order
 from schema.product import get_products, get_products_by_name
 from schema.database import SessionLocal
 
-from dependency.upload_image import save_image, delete_image
+from dependency.image import save_image, delete_image
 from schema.tables import Product
 
 product_router = APIRouter()

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from schema.tables import CompanyInfo
 from schema.database import SessionLocal
-from dependency.upload_image import save_upload_image, delete_image
+from dependency.image import save_upload_image, delete_image
 
 company_router = APIRouter()
 

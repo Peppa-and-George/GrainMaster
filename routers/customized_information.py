@@ -5,7 +5,7 @@ from fastapi import status, Form, UploadFile, File, Query
 from fastapi.responses import JSONResponse
 from schema.tables import CustomizedInformation
 from schema.database import SessionLocal
-from dependency.upload_image import save_upload_image, delete_image
+from dependency.image import save_upload_image, delete_image
 
 customized_information_router = APIRouter()
 

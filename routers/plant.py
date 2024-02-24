@@ -18,7 +18,7 @@ from dependency.videos import save_video, delete_video
 from schema.tables import Segment, PlantOperate, PlanSegmentRelationship, Plan, Location
 from schema.common import page_with_order
 from schema.database import SessionLocal
-from dependency.upload_image import save_image, delete_image
+from dependency.image import save_image, delete_image
 
 from models.base import PlanSegmentRelationshipSchema
 

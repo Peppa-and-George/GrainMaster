@@ -357,3 +357,20 @@ class QualitySchema(BaseModel):
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class BannerSchema(BaseModel):
+    id: int = Field(description="banner id")
+    name: Optional[str] = Field(description="banner标题")
+    icon: Optional[str] = Field(description="banner封面")
+    introduction: Optional[str] = Field(description="banner描述")
+    status: Optional[bool] = Field(description="是否上架")
+    synchronize: Optional[bool] = Field(description="是否同步")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)

@@ -232,8 +232,9 @@ class Address(Base):
         "Client", back_populates="addresses", foreign_keys=[client_id]
     )
     express: Mapped["Express"] = relationship("Express", back_populates="address")
-
-    orders: Mapped[List["Order"]] = relationship("Order", back_populates="address")
+    logistics_plans: Mapped[List["LogisticsPlan"]] = relationship(
+        "LogisticsPlan", back_populates="address"
+    )
 
 
 class Location(Base):
@@ -327,13 +328,15 @@ class Order(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
     client_id = Column(ForeignKey("client.id"))
-    address_id = Column(ForeignKey("address.id"))
     product_id = Column(ForeignKey("product.id"))
     camera_id = Column(ForeignKey("camera.id"))
-    num = Column(String(64), nullable=False, comment="订单编号", name="num", unique=True)
+    order_number = Column(
+        String(64), nullable=False, comment="订单编号", name="order_number", unique=True
+    )
     customized_area = Column(
         Float, nullable=False, comment="定制面积", name="customized_area"
     )
+    total_amount = Column(Integer, comment="总数量", name="total_amount")
     status = Column(
         String(100), nullable=False, comment="状态", name="status", default="进行中"
     )
@@ -352,16 +355,13 @@ class Order(Base):
     client: Mapped["Client"] = relationship(
         "Client", back_populates="orders", foreign_keys=[client_id]
     )
-    address: Mapped["Address"] = relationship(
-        "Address", back_populates="orders", foreign_keys=[address_id]
-    )
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="orders", foreign_keys=[plan_id]
     )
     product: Mapped["Product"] = relationship(
         "Product", foreign_keys=[product_id], back_populates="orders"
     )
-    logistics_plan: Mapped["LogisticsPlan"] = relationship(
+    logistics_plans: Mapped[List["LogisticsPlan"]] = relationship(
         "LogisticsPlan", back_populates="order"
     )
     camera: Mapped["Camera"] = relationship(
@@ -570,6 +570,8 @@ class LogisticsPlan(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
     order_id = Column(ForeignKey("order.id"))
+    order_number = Column(String(64), comment="订单编号", name="order_number")
+    address_id = Column(ForeignKey("address.id"))
     status = Column(String(50), comment="状态", name="status", default="未开始")
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
@@ -591,7 +593,10 @@ class LogisticsPlan(Base):
         "Plan", back_populates="logistics_plans", foreign_keys=[plan_id]
     )
     order: Mapped["Order"] = relationship(
-        "Order", back_populates="logistics_plan", foreign_keys=[order_id]
+        "Order", back_populates="logistics_plans", foreign_keys=[order_id]
+    )
+    address: Mapped["Address"] = relationship(
+        "Address", back_populates="logistics_plans", foreign_keys=[address_id]
     )
 
 

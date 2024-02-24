@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Query, status, Body, HTTPException
 from fastapi.responses import JSONResponse
 
-from schema.tables import LogisticsPlan, Plan, Location, Order
+from schema.tables import LogisticsPlan, Plan, Location, Order, Address, Client
 from schema.common import page_with_order
 from schema.database import SessionLocal
 from models.base import LogisticsPlanSchema
@@ -67,44 +67,69 @@ async def get_logistics(
 
 @logistics_router.post("/add_logistics", summary="添加物流计划")
 async def add_logistics(
-    plan_id: int = Body(..., description="计划id"),
+    order_number: Optional[str] = Body(None, description="订单编号"),
+    order_id: Optional[int] = Body(None, description="订单id"),
+    address_id: int = Body(..., description="地址id"),
     operate_date: str = Body(
         ..., description="计划操作日期", examples=["2021-01-01 00:00:00"]
     ),
     operate_people: str = Body(..., description="计划操作人"),
-    order_num: str = Body(..., description="订单编号"),
     notices: str = Body(..., description="备注"),
 ):
-    try:
-        with SessionLocal() as db:
-            plan = db.query(Plan).filter(Plan.id == plan_id).first()
-            if not plan:
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={"code": 1, "message": "计划不存在"},
-                )
-            order = db.query(Order).filter(Order.num == order_num).first()
-            if not order:
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={"code": 1, "message": "订单不存在"},
-                )
-            logistics = LogisticsPlan(
-                plan_id=plan_id,
-                operate_date=datetime.strptime(operate_date, "%Y-%m-%d %H:%M:%S"),
-                operate_people=operate_people,
-                order_id=order.id,
-                notices=notices,
-            )
-            db.add(logistics)
-            db.commit()
+    """
+    # 添加物流计划
+    order_number和order_id必须有一个, 优先使用order_id
+    ## params
+    - **order_number**: 订单编号, 可选
+    - **order_id**: 订单id, 可选
+    - **address_id**: 地址id
+    - **operate_date**: 计划操作日期
+    - **operate_people**: 计划操作人
+    - **notices**: 备注
+    """
+    if not order_number and not order_id:
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 1, "message": "订单编号或订单id必须有一个"},
+        )
+    with SessionLocal() as db:
+        if order_id:
+            order = db.query(Order).filter(Order.id == order_id).first()
+        else:
+            order = db.query(Order).filter(Order.order_number == order_number).first()
+
+        # 验证地址是否存在
+        address = (
+            db.query(Address)
+            .filter(Address.id == address_id and Address.client_id == order.client_id)
+            .first()
+        )
+        if not address:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={"code": 1, "message": "地址不存在或者不属于该客户"},
             )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        if not order:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "订单不存在"},
+            )
+
+        logistics = LogisticsPlan(
+            order_id=order.id,
+            order_number=order.order_number,
+            address_id=address_id,
+            plan_id=order.plan_id,
+            operate_date=datetime.strptime(operate_date, "%Y-%m-%d %H:%M:%S"),
+            operate_people=operate_people,
+            notices=notices,
+        )
+        logistics.order = order
+        db.add(logistics)
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "添加成功"},
         )
 
 
@@ -113,6 +138,12 @@ async def update_logistics_status(
     logistics_id: int = Body(..., description="物流计划id"),
     logistics_status: str = Body(..., description="状态"),
 ):
+    """
+    # 修改物流计划状态
+    ## params
+    - **logistics_id**: 物流计划id
+    - **logistics_status**: 状态
+    """
     try:
         with SessionLocal() as db:
             logistics = (
@@ -124,6 +155,54 @@ async def update_logistics_status(
                     content={"code": 1, "message": "物流计划不存在"},
                 )
             logistics.status = logistics_status
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 0, "message": "修改成功"},
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@logistics_router.put("/update_logistics", summary="修改物流计划")
+async def update_logistics(
+    logistics_id: int = Body(..., description="物流计划id"),
+    address_id: int = Body(None, description="地址id"),
+    operate_date: str = Body(None, description="计划操作日期"),
+    operate_people: str = Body(None, description="计划操作人"),
+    notices: str = Body(None, description="备注"),
+):
+    """
+    # 修改物流计划
+    ## params
+    - **logistics_id**: 物流计划id
+    - **address_id**: 地址id, 可选
+    - **operate_date**: 计划操作日期, 可选
+    - **operate_people**: 计划操作人, 可选
+    - **notices**: 备注, 可选
+    """
+    try:
+        with SessionLocal() as db:
+            logistics = (
+                db.query(LogisticsPlan).filter(LogisticsPlan.id == logistics_id).first()
+            )
+            if not logistics:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "物流计划不存在"},
+                )
+            if address_id:
+                logistics.address_id = address_id
+            if operate_date:
+                logistics.operate_date = datetime.strptime(
+                    operate_date, "%Y-%m-%d %H:%M:%S"
+                )
+            if operate_people:
+                logistics.operate_people = operate_people
+            if notices:
+                logistics.notices = notices
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,

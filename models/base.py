@@ -276,7 +276,8 @@ class OrderSchema(BaseModel):
     plan_id: Optional[int] = Field(description="计划ID")
     product_id: Optional[int] = Field(description="产品ID")
     camera_id: Optional[int] = Field(description="摄像头ID")
-    num: Optional[str] = Field(description="订单编号")
+    order_number: str = Field(description="订单编号")
+    total_amount: Optional[int] = Field(description="总数量")
     status: Optional[str] = Field(description="订单状态")
     customized_area: Optional[float] = Field(description="定制面积")
     create_time: datetime = Field(description="创建时间")
@@ -287,7 +288,7 @@ class OrderSchema(BaseModel):
     plan: PlanSchema = Field(description="计划信息")
     product: ProductSchema = Field(description="产品信息")
     camera: "CameraSchema" = Field(description="摄像头信息")
-    address: AddressSchema = Field(description="地址信息")
+    logistics_plans: List["LogisticsPlanSchema"] = Field(description="物流计划信息")
 
     @field_serializer("create_time", "update_time", "complete_time")
     def format_time(self, v: Any) -> Any:
@@ -299,14 +300,16 @@ class OrderSchema(BaseModel):
 class LogisticsPlanSchema(BaseModel):
     id: int = Field(description="物流计划ID")
     plan_id: Optional[int] = Field(description="计划ID")
+    address_id: Optional[int] = Field(description="地址ID")
     operate_date: Optional[datetime] = Field(description="计划操作日期")
     operate_people: Optional[str] = Field(description="操作人员")
-    order: Optional[int] = Field(description="订单ID")
+    order_id: Optional[int] = Field(description="订单ID")
+    order_number: Optional[str] = Field(description="订单编号")
     notices: Optional[str] = Field(description="备注")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
-    order: OrderSchema = Field(description="订单信息")
+    address: AddressSchema = Field(description="地址信息")
 
     @field_serializer("create_time", "update_time", "operate_date")
     def format_time(self, v: Any) -> Any:

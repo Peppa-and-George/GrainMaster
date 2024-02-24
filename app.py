@@ -24,6 +24,7 @@ from routers.statistic import statistic_router
 from routers.company import company_router
 from routers.customized_information import customized_information_router
 from routers.video import video_router
+from routers.banner import banner_router
 from journal import log
 from auth import (
     jwt,
@@ -34,7 +35,7 @@ from auth import (
     ALGORITHM,
     verify_password,
 )
-from config import IMAGE_DIR, VIDEOS_DIR, REPORT_DIR
+from config import IMAGE_DIR, VIDEOS_DIR, REPORT_DIR, FILE_DIR
 from schema.database import SessionLocal
 from schema.tables import User
 
@@ -44,6 +45,7 @@ app = FastAPI(title="backend", version="1.0.0")
 app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
 app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
 app.mount("/report", StaticFiles(directory=REPORT_DIR), name="report")
+app.mount("/file", StaticFiles(directory=FILE_DIR), name="file")
 app.include_router(
     user_router, tags=["系统管理"], prefix="/user", dependencies=[Depends(oauth2_scheme)]
 )
@@ -141,6 +143,13 @@ app.include_router(
     dependencies=[Depends(oauth2_scheme)],
 )
 
+app.include_router(
+    banner_router,
+    tags=["banner管理", "内容发布"],
+    prefix="/banner",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
 
 async def sieve_middleware(request: Request, call_next):
     s_time = time.perf_counter()
@@ -215,7 +224,7 @@ def runserver(workers):
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8082,
+        port=8080,
         workers=workers,
         # log_level="critical",
         # reload=True

@@ -23,6 +23,7 @@ from routers.client import client_router
 from routers.statistic import statistic_router
 from routers.company import company_router
 from routers.customized_information import customized_information_router
+from routers.video import video_router
 from journal import log
 from auth import (
     jwt,
@@ -130,6 +131,13 @@ app.include_router(
     customized_information_router,
     tags=["关于定制", "内容发布"],
     prefix="/customized_information",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    video_router,
+    tags=["视频管理", "内容发布"],
+    prefix="/video_management",
     dependencies=[Depends(oauth2_scheme)],
 )
 

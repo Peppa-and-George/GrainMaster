@@ -225,7 +225,7 @@ async def update_order_status(
 
 @order_router.delete("/delete_order", summary="删除订单")
 async def delete_order(
-    order_id: int = Body(..., description="订单id"),
+    order_id: int = Query(..., description="订单id"),
 ):
     """
     # 删除订单

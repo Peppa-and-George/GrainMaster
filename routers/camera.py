@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Union
 
-from fastapi import APIRouter, status, Body
+from fastapi import APIRouter, status, Body, Query
 from fastapi.responses import JSONResponse
 
 from models.base import CameraSchema
@@ -249,7 +249,7 @@ async def update_camera(
 
 @camera_router.delete("/delete_camera", summary="删除摄像头")
 async def delete_camera(
-    camera_id: int = Body(..., description="摄像头id"),
+    camera_id: int = Query(..., description="摄像头id"),
 ):
     with SessionLocal() as session:
         cam = session.query(Camera).filter(Camera.id == camera_id).first()

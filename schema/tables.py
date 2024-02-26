@@ -331,9 +331,7 @@ class Order(Base):
     order_number = Column(
         String(64), nullable=False, comment="订单编号", name="order_number", unique=True
     )
-    customized_area = Column(
-        Float, nullable=False, comment="定制面积", name="customized_area"
-    )
+    customized_area = Column(Float, comment="定制面积", name="customized_area")
     total_amount = Column(Integer, comment="总数量", name="total_amount")
     status = Column(
         String(100), nullable=False, comment="状态", name="status", default="进行中"

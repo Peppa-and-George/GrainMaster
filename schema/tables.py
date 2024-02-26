@@ -148,9 +148,7 @@ class Client(Base):
         comment="更新时间",
         name="update_time",
     )
-    delete_time = Column(
-        DateTime, onupdate=datetime.now, comment="删除时间", name="delete_time"
-    )
+    delete_time = Column(DateTime, comment="删除时间", name="delete_time")
     is_deleted = Column(Boolean, comment="是否已删除", name="is_deleted")
 
     privileges: Mapped[List["ClientPrivilege"]] = relationship(

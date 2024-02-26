@@ -287,7 +287,7 @@ class OrderSchema(BaseModel):
     client: ClientSchema = Field(description="客户信息")
     plan: PlanSchema = Field(description="计划信息")
     product: ProductSchema = Field(description="产品信息")
-    camera: "CameraSchema" = Field(description="摄像头信息")
+    camera: Optional["CameraSchema"] = Field(description="摄像头信息")
     logistics_plans: List["LogisticsPlanSchema"] = Field(description="物流计划信息")
 
     @field_serializer("create_time", "update_time", "complete_time")

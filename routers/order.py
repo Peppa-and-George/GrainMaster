@@ -64,10 +64,10 @@ async def get_orders(
             if order_status:
                 query = query.filter(Order.status == order_status)
             if start_time:
-                start_time = datetime.strptime(start_time, "%Y-%m-%d")
+                start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
                 query = query.filter(Order.create_time >= start_time)
             if end_time:
-                end_time = datetime.strptime(end_time, "%Y-%m-%d")
+                end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
                 query = query.filter(Order.complete_time <= end_time)
             if client_name:
                 query = query.filter(Client.name == client_name)
@@ -99,6 +99,34 @@ async def get_orders(
         return JSONResponse({"code": 500, "msg": str(e)})
 
 
+@order_router.get("/get_order_by_id", summary="获取订单详情")
+async def get_order_by_id(
+    order_id: int = Query(..., description="订单id"),
+):
+    """
+    # 获取订单详情
+    - **order_id**: 订单id
+    """
+    try:
+        with SessionLocal() as db:
+            order = db.query(Order).filter(Order.id == order_id).first()
+            if not order:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "订单不存在"},
+                )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 0,
+                    "data": OrderSchema.model_validate(order).model_dump(),
+                    "message": "查询成功",
+                },
+            )
+    except Exception as e:
+        return JSONResponse({"code": 500, "message": str(e)})
+
+
 @order_router.get("/filter_orders_by_client", summary="根据客户获取订单列表")
 async def filter_orders_by_client(
     client_id: int = Query(..., description="客户id"),
@@ -128,13 +156,13 @@ async def filter_orders_by_client(
             )
             return JSONResponse(status_code=status.HTTP_200_OK, content=response)
     except Exception as e:
-        return JSONResponse({"code": 500, "msg": str(e)})
+        return JSONResponse({"code": 500, "message": str(e)})
 
 
 @order_router.post("/add_order", summary="添加订单")
 async def add_order(
     plan_id: int = Body(..., description="计划id"),
-    client_id: int = Body(..., description="客户id"),
+    client_id: Optional[int] = Body(None, description="客户id"),
     product_id: int = Body(..., description="产品id"),
     customized_area: float = Body(..., description="定制面积"),
     total_amount: Optional[int] = Body(None, description="总数量"),
@@ -155,25 +183,25 @@ async def add_order(
         if not plan:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "msg": "计划不存在"},
+                content={"code": 1, "message": "计划不存在"},
             )
         client = db.query(Client).filter(Client.id == client_id).first()
         if not client:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "msg": "客户不存在"},
+                content={"code": 1, "message": "客户不存在"},
             )
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "msg": "产品不存在"},
+                content={"code": 1, "message": "产品不存在"},
             )
         camera = db.query(Camera).filter_by(id=camera_id).first()
         if not camera:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "msg": "摄像头不存在"},
+                content={"code": 1, "message": "摄像头不存在"},
             )
 
     try:
@@ -190,9 +218,9 @@ async def add_order(
                 )
             )
             db.commit()
-            return JSONResponse({"code": 0, "msg": "添加成功"})
+            return JSONResponse({"code": 0, "message": "添加成功"})
     except Exception as e:
-        return JSONResponse({"code": 1, "msg": str(e)})
+        return JSONResponse({"code": 1, "message": str(e)})
 
 
 @order_router.put("/complete_order", summary="完成订单")
@@ -209,14 +237,14 @@ async def complete_order(
             if not order:
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content={"code": 1, "msg": "订单不存在"},
+                    content={"code": 1, "message": "订单不存在"},
                 )
             order.status = "已完成"
             order.complete_time = datetime.now()
             db.commit()
-            return JSONResponse({"code": 0, "msg": "订单完成"})
+            return JSONResponse({"code": 0, "message": "订单完成"})
     except Exception as e:
-        return JSONResponse({"code": 1, "msg": str(e)})
+        return JSONResponse({"code": 1, "message": str(e)})
 
 
 @order_router.put("/update_order", summary="更新订单")
@@ -247,7 +275,7 @@ async def update_order_status(
             if not order:
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content={"code": 1, "msg": "订单不存在"},
+                    content={"code": 1, "message": "订单不存在"},
                 )
             if order_status:
                 order.status = order_status
@@ -264,9 +292,9 @@ async def update_order_status(
             if customized_area:
                 order.customized_area = customized_area
             db.commit()
-            return JSONResponse({"code": 0, "msg": "更新成功"})
+            return JSONResponse({"code": 0, "message": "更新成功"})
     except Exception as e:
-        return JSONResponse({"code": 1, "msg": str(e)})
+        return JSONResponse({"code": 1, "message": str(e)})
 
 
 @order_router.delete("/delete_order", summary="删除订单")
@@ -283,10 +311,10 @@ async def delete_order(
             if not order:
                 return JSONResponse(
                     status_code=status.HTTP_200_OK,
-                    content={"code": 1, "msg": "订单不存在"},
+                    content={"code": 1, "message": "订单不存在"},
                 )
             db.delete(order)
             db.commit()
-            return JSONResponse({"code": 0, "msg": "删除成功"})
+            return JSONResponse({"code": 0, "message": "删除成功"})
     except Exception as e:
-        return JSONResponse({"code": 1, "msg": str(e)})
+        return JSONResponse({"code": 1, "message": str(e)})

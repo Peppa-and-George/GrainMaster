@@ -163,8 +163,8 @@ async def filter_orders_by_client(
 async def add_order(
     plan_id: int = Body(..., description="计划id"),
     client_id: Optional[int] = Body(None, description="客户id"),
-    product_id: int = Body(None, description="产品id"),
-    customized_area: Optional[float] = Body(..., description="定制面积"),
+    product_id: int = Body(..., description="产品id"),
+    customized_area: Optional[float] = Body(None, description="定制面积"),
     total_amount: Optional[int] = Body(None, description="总数量"),
     camera_id: Optional[int] = Body(None, description="相机id"),
 ):

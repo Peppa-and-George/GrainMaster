@@ -2,7 +2,7 @@ import time
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException, status, Query, Body
+from fastapi import APIRouter, status, Query, Body
 from fastapi.responses import JSONResponse
 
 from models.base import OrderSchema
@@ -72,7 +72,7 @@ async def get_orders(
             if client_name:
                 query = query.filter(Client.name == client_name)
             if phone_number:
-                query = query.filter(Client.signing_phone == phone_number)
+                query = query.filter(Client.phone_number == phone_number)
             if client_type:
                 query = query.filter(Client.type == client_type)
             if location_name:
@@ -164,7 +164,7 @@ async def add_order(
     plan_id: int = Body(..., description="计划id"),
     client_id: Optional[int] = Body(None, description="客户id"),
     product_id: int = Body(..., description="产品id"),
-    customized_area: float = Body(..., description="定制面积"),
+    customized_area: Optional[float] = Body(..., description="定制面积"),
     total_amount: Optional[int] = Body(None, description="总数量"),
     camera_id: Optional[int] = Body(None, description="相机id"),
 ):

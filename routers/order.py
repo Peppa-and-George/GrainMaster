@@ -68,7 +68,7 @@ async def get_orders(
                 query = query.filter(Order.create_time >= start_time)
             if end_time:
                 end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
-                query = query.filter(Order.complete_time <= end_time)
+                query = query.filter(Order.create_time <= end_time)
             if client_name:
                 query = query.filter(Client.name == client_name)
             if phone_number:
@@ -166,7 +166,7 @@ async def add_order(
     product_id: int = Body(..., description="产品id"),
     customized_area: float = Body(..., description="定制面积"),
     total_amount: Optional[int] = Body(None, description="总数量"),
-    camera_id: int = Body(..., description="相机id"),
+    camera_id: Optional[int] = Body(None, description="相机id"),
 ):
     """
     # 添加订单
@@ -197,12 +197,13 @@ async def add_order(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "产品不存在"},
             )
-        camera = db.query(Camera).filter_by(id=camera_id).first()
-        if not camera:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "摄像头不存在"},
-            )
+        if camera_id:
+            camera = db.query(Camera).filter_by(id=camera_id).first()
+            if not camera:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "摄像头不存在"},
+                )
 
     try:
         with SessionLocal() as db:

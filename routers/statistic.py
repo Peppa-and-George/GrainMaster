@@ -8,6 +8,7 @@ from schema.tables import (
     LogisticsPlan,
     Camera,
     Location,
+    Order,
 )
 from schema.database import SessionLocal
 
@@ -111,4 +112,29 @@ async def get_location_info_api():
             "code": 0,
             "message": "success",
             "data": data,
+        }
+
+
+@statistic_router.get("/get_order_info", summary="获取订单汇总信息")
+async def get_order_info_api():
+    """
+    # 获取订单汇总信息
+    """
+    with SessionLocal() as db:
+        query = db.query(Order.status, func.count(Order.id)).group_by(Order.status)
+        data = [
+            {
+                "status": item[0],
+                "count": item[1],
+            }
+            for item in query.all()
+        ]
+        total = sum([item["count"] for item in data])
+        return {
+            "code": 0,
+            "message": "success",
+            "data": {
+                "total": total,
+                "detail": data,
+            },
         }

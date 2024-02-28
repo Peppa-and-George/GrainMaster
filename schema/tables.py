@@ -99,6 +99,8 @@ class Privilege(Base):
     privilege_type = Column(String(32), comment="权益类型", name="type")
     description = Column(String(250), comment="权益描述", name="description")
     deleted = Column(Boolean, default=False, comment="权益是否删除")
+    effective_time = Column(DateTime, comment="生效时间", name="effective_time")
+    expired_time = Column(DateTime, comment="过期时间", name="expired_date")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -182,10 +184,6 @@ class ClientPrivilege(Base):
     client_id = Column(ForeignKey("client.id", ondelete="CASCADE"), comment="客户")
     privilege_id = Column(ForeignKey("privilege.id", ondelete="CASCADE"), comment="权益")
 
-    effective_time = Column(
-        DateTime, comment="生效时间", name="effective_time", nullable=False
-    )
-    expired_date = Column(DateTime, comment="过期时间", name="expired_date", nullable=False)
     amount = Column(Integer, comment="权益数量", name="amount")
     used_amount = Column(Integer, comment="已使用数量", name="used_amount")
     unused_amount = Column(Integer, comment="未使用数量", name="unused_amount")

@@ -142,10 +142,12 @@ class PrivilegeSchema(BaseModel):
     privilege_number: Optional[str] = Field(description="权限编号")
     description: Optional[str] = Field(description="权限描述")
     deleted: Optional[bool] = Field(description="权益是否删除")
+    effective_time: Optional[datetime] = Field(description="生效时间")
+    expired_time: Optional[datetime] = Field(description="过期时间")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
-    @field_serializer("create_time", "update_time")
+    @field_serializer("create_time", "update_time", "expired_time", "effective_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
@@ -156,8 +158,6 @@ class ClientPrivilegeRelationSchema(BaseModel):
     id: int = Field(description="客户权限关系ID")
     client_id: Optional[int] = Field(description="客户ID")
     privilege_id: Optional[int] = Field(description="权限ID")
-    expired_date: Optional[datetime] = Field(description="过期时间")
-    effective_time: Optional[datetime] = Field(description="生效时间")
     amount: Optional[int] = Field(description="权益总数量")
     used_amount: Optional[int] = Field(description="已使用数量")
     unused_amount: Optional[int] = Field(description="未使用数量")
@@ -169,7 +169,7 @@ class ClientPrivilegeRelationSchema(BaseModel):
         description="权益使用信息", default=[]
     )
 
-    @field_serializer("create_time", "update_time", "expired_date", "effective_time")
+    @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 

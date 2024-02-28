@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_serializer, ConfigDict
-from typing import Any, List, Union, Optional
+from typing import Any, List, Optional
 from datetime import datetime
 
 
@@ -123,7 +123,10 @@ class ClientSchema(BaseModel):
     is_delete: Optional[bool] = Field(description="是否删除", default=False)
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
-    addresses: Union[List[AddressSchema]] = Field(description="地址列表", default=[])
+    addresses: Optional[List[AddressSchema]] = Field(description="地址列表", default=[])
+    privileges: Optional[List["ClientPrivilegeRelationSchema"]] = Field(
+        description="权益列表", default=[]
+    )
 
     @field_serializer("create_time", "update_time", "delete_time")
     def format_time(self, v: Any) -> Any:
@@ -136,6 +139,7 @@ class PrivilegeSchema(BaseModel):
     id: int = Field(description="权限ID")
     name: Optional[str] = Field(description="权限名称")
     privilege_type: Optional[str] = Field(description="权限类型")
+    privilege_number: Optional[str] = Field(description="权限编号")
     description: Optional[str] = Field(description="权限描述")
     deleted: Optional[bool] = Field(description="权益是否删除")
     create_time: datetime = Field(description="创建时间")
@@ -150,22 +154,22 @@ class PrivilegeSchema(BaseModel):
 
 class ClientPrivilegeRelationSchema(BaseModel):
     id: int = Field(description="客户权限关系ID")
-    privilege_number: Optional[str] = Field(description="权益编号")
     client_id: Optional[int] = Field(description="客户ID")
     privilege_id: Optional[int] = Field(description="权限ID")
     expired_date: Optional[datetime] = Field(description="过期时间")
     effective_time: Optional[datetime] = Field(description="生效时间")
-    use_time: Optional[datetime] = Field(description="使用时间")
-    usable: Optional[bool] = Field(description="是否使用")
+    amount: Optional[int] = Field(description="权益总数量")
+    used_amount: Optional[int] = Field(description="已使用数量")
+    unused_amount: Optional[int] = Field(description="未使用数量")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
-    client: Union[ClientSchema] = Field(description="客户信息")
-    privilege: Union[PrivilegeSchema] = Field(description="权益信息")
-
-    @field_serializer(
-        "create_time", "update_time", "use_time", "expired_date", "effective_time"
+    privilege: Optional[PrivilegeSchema] = Field(description="权益信息", default={})
+    usage: Optional[List["PrivilegeUsageSchema"]] = Field(
+        description="权益使用信息", default=[]
     )
+
+    @field_serializer("create_time", "update_time", "expired_date", "effective_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
@@ -201,6 +205,7 @@ class PlanSegmentRelationshipSchema(BaseModel):
 
     segment: SegmentSchema = Field(description="种植信息")
     plan: PlanSchema = Field(description="计划信息")
+    usage: Optional[List["PrivilegeUsageSchema"]] = Field(description="用量信息")
 
     @field_serializer("create_time", "update_time", "operation_date")
     def format_time(self, v: Any) -> Any:
@@ -370,6 +375,23 @@ class BannerSchema(BaseModel):
     update_time: datetime = Field(description="更新时间")
 
     @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PrivilegeUsageSchema(BaseModel):
+    id: int = Field(description="权益使用ID")
+    client_id: Optional[int] = Field(description="客户ID")
+    privilege_id: Optional[int] = Field(description="权益ID")
+    client_privilege_id: Optional[int] = Field(description="客户权益关系ID")
+    used_amount: Optional[int] = Field(description="使用数量")
+    used_time: Optional[datetime] = Field(description="使用时间")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "used_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 

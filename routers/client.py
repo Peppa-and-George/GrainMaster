@@ -62,15 +62,6 @@ async def get_clients(
             if activate is not None:
                 query = query.filter(Client.activate == activate)
 
-            # data = page_with_order(
-            #     schema=ClientSchema,
-            #     query=query,
-            #     page=page,
-            #     page_size=page_size,
-            #     order_field=order_field,
-            #     order=order,
-            # )
-
             total = query.count()
             total_page = (
                 total // page_size + 1 if total % page_size != 0 else total // page_size
@@ -185,6 +176,8 @@ async def add_client(
     - **region**: 地区
     - **address**: 地址
     - **category**: 客户类别
+    - signing_people: 签约人, 可选
+    - signing_phone: 签约人手机号, 可选
     - **activate**: 客户是否激活，bool类型
     """
     if signing_people is None or signing_phone is None:

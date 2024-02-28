@@ -93,6 +93,9 @@ class Privilege(Base):
     __tablename__ = "privilege"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(32), nullable=False, comment="权益名称", name="name", unique=True)
+    privilege_number = Column(
+        String(32), comment="权益编号", name="privilege_number", unique=True
+    )
     privilege_type = Column(String(32), comment="权益类型", name="type")
     description = Column(String(250), comment="权益描述", name="description")
     deleted = Column(Boolean, default=False, comment="权益是否删除")
@@ -112,6 +115,10 @@ class Privilege(Base):
         "ClientPrivilege", back_populates="privilege"
     )
 
+    usage: Mapped[List["PrivilegeUsage"]] = relationship(
+        "PrivilegeUsage", back_populates="privilege"
+    )
+
 
 class Client(Base):
     __tablename__ = "client"
@@ -121,7 +128,7 @@ class Client(Base):
     account = Column(
         String(32), nullable=True, comment="账号", name="account", unique=True
     )
-    name = Column(String(32), nullable=False, comment="账号名", name="name")
+    name = Column(String(32), nullable=False, comment="账号名", name="name", unique=True)
     phone_number = Column(
         String(32), nullable=True, comment="绑定手机号", name="phone_number"
     )
@@ -164,6 +171,9 @@ class Client(Base):
         lazy="dynamic",
         back_populates="client",
     )
+    privilege_usages: Mapped[List["PrivilegeUsage"]] = relationship(
+        "PrivilegeUsage", back_populates="client"
+    )
 
 
 class ClientPrivilege(Base):
@@ -176,15 +186,9 @@ class ClientPrivilege(Base):
         DateTime, comment="生效时间", name="effective_time", nullable=False
     )
     expired_date = Column(DateTime, comment="过期时间", name="expired_date", nullable=False)
-    privilege_number = Column(
-        String(32),
-        comment="权益编号",
-        nullable=False,
-        unique=True,
-        name="privilege_number",
-    )
-    use_time = Column(DateTime, comment="使用时间", name="use_time")
-    usable = Column(Boolean, comment="是否可用", name="usable", default=True)
+    amount = Column(Integer, comment="权益数量", name="amount")
+    used_amount = Column(Integer, comment="已使用数量", name="used_amount")
+    unused_amount = Column(Integer, comment="未使用数量", name="unused_amount")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -202,6 +206,42 @@ class ClientPrivilege(Base):
     )
     privilege: Mapped["Privilege"] = relationship(
         "Privilege", back_populates="clients", foreign_keys=[privilege_id]
+    )
+    usage: Mapped[List["PrivilegeUsage"]] = relationship(
+        "PrivilegeUsage", back_populates="client_privilege"
+    )
+
+
+class PrivilegeUsage(Base):
+    __tablename__ = "privilege_usage"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(ForeignKey("client.id", ondelete="CASCADE"), comment="客户")
+    privilege_id = Column(ForeignKey("privilege.id", ondelete="CASCADE"), comment="权益")
+    client_privilege_id = Column(
+        ForeignKey("client_privilege.id", ondelete="CASCADE"), comment="客户权益"
+    )
+
+    used_time = Column(DateTime, comment="使用时间", name="used_time", nullable=False)
+    used_amount = Column(Integer, comment="使用数量", name="used_amount")
+
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        comment="更新时间",
+        name="update_time",
+        onupdate=datetime.now,
+    )
+    privilege: Mapped["Privilege"] = relationship(
+        "Privilege", back_populates="usage", foreign_keys=[privilege_id]
+    )
+    client_privilege: Mapped["ClientPrivilege"] = relationship(
+        "ClientPrivilege", back_populates="usage", foreign_keys=[client_privilege_id]
+    )
+    client: Mapped["Client"] = relationship(
+        "Client", back_populates="privilege_usages", foreign_keys=[client_id]
     )
 
 
@@ -594,35 +634,6 @@ class LogisticsPlan(Base):
     address: Mapped["Address"] = relationship(
         "Address", back_populates="logistics_plans", foreign_keys=[address_id]
     )
-
-
-# class PrivilegeInfo(Base):
-#     __tablename__ = "privilege_info"
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     privilege_id = Column(ForeignKey("privilege.id", ondelete="CASCADE"))
-#
-#     name = Column(String(50), nullable=False, comment="权益项", name="name")
-#     description = Column(Text, nullable=False, comment="权益项描述", name="phone_num")
-#
-#     create_time = Column(
-#         DateTime, default=datetime.now, comment="创建时间", name="create_time"
-#     )
-#     update_time = Column(
-#         DateTime,
-#         default=datetime.now,
-#         onupdate=datetime.now,
-#         comment="更新时间",
-#         name="update_time",
-#     )
-#
-#     privilege_table = relationship("privilege_table", backref="privilege_info")
-
-
-# class PrivilegeTable(Base):
-#     __tablename__ = "privilege_table"
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     pi_id = Column(ForeignKey("privilege_info.id"))
-#     num = Column(Integer, nullable=False, comment="剩余数量", name="number")
 
 
 class Quality(Base):

@@ -9,6 +9,7 @@ from schema.tables import (
     Camera,
     Location,
     Order,
+    Plan,
 )
 from schema.database import SessionLocal
 
@@ -136,5 +137,27 @@ async def get_order_info_api():
             "data": {
                 "total": total,
                 "detail": data,
+            },
+        }
+
+
+@statistic_router.get("/get_material_info", summary="获取原料和成品汇总信息")
+async def get_material_info_api():
+    """
+    # 获取原料和成品汇总信息
+    """
+    with SessionLocal() as db:
+        plans = db.query(Plan).all()
+        total_material = 0.0
+        total_product = 0.0
+        for plan in plans:
+            total_material += plan.total_material if plan.total_material else 0
+            total_product += plan.total_product if plan.total_product else 0
+        return {
+            "code": 0,
+            "message": "success",
+            "data": {
+                "total_material": total_material,
+                "total_product": total_product,
             },
         }

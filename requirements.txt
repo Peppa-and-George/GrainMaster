@@ -10,3 +10,4 @@ fastapi[all]
 Pillow~=10.1.0
 requests
 python-multipart
+qrcode

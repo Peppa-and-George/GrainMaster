@@ -7,8 +7,9 @@ from fastapi.exceptions import HTTPException
 from fastapi import APIRouter, Query
 from schema.database import SessionLocal
 from schema.common import page_with_order
-from schema.tables import Plan, Location, Quality
+from schema.tables import Plan, Location, Quality, Traceability
 from models.base import PlanSchema
+import uuid
 
 plan_router = APIRouter()
 
@@ -106,6 +107,20 @@ async def add_plan(
                         status_code=status.HTTP_404_NOT_FOUND,
                         content={"code": 1, "message": "基地不存在"},
                     )
+            old_plan = (
+                db.query(Plan)
+                .filter(
+                    Plan.year == year,
+                    Plan.batch == batch,
+                    Plan.location_id == location_id,
+                )
+                .first()
+            )
+            if old_plan:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "该计划已存在，请勿重复添加"},
+                )
             plan = Plan(
                 year=year,
                 location_id=location_id,
@@ -113,11 +128,18 @@ async def add_plan(
                 batch=batch,
                 create_people=create_people,
             )
+            db.flush()
             quality = Quality(
                 status="未上传",
             )
             quality.plan = plan
             plan.qualities.append(quality)
+
+            # 添加溯源记录
+            traceability = Traceability(
+                traceability_code=f"{plan.year}-{plan.batch}-{uuid.uuid4().hex[:8]}"
+            )
+            plan.traceability = traceability
 
             db.add(plan)
             db.commit()

@@ -352,6 +352,9 @@ class Plan(Base):
         "LogisticsPlan", back_populates="plan"
     )
     qualities: Mapped[List["Quality"]] = relationship("Quality", back_populates="plan")
+    traceability: Mapped["Traceability"] = relationship(
+        "Traceability", back_populates="plan"
+    )
 
     __table_args__ = (
         UniqueConstraint("year", "batch", "location_id", name="unique_plan"),
@@ -750,4 +753,30 @@ class Video(Base):
         onupdate=datetime.now,
         comment="更新时间",
         name="update_time",
+    )
+
+
+class Traceability(Base):
+    __tablename__ = "traceability"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
+    traceability_code = Column(
+        String(64), comment="溯源码", name="traceability_code", unique=True
+    )
+    used = Column(Boolean, comment="是否使用", name="used", default=False)
+    used_time = Column(DateTime, comment="使用时间", name="used_time")
+    print_status = Column(Boolean, comment="打印状态", name="print_status", default=False)
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    plan: Mapped["Plan"] = relationship(
+        "Plan", back_populates="traceability", foreign_keys=[plan_id]
     )

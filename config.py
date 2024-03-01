@@ -21,3 +21,5 @@ if not os.path.exists(FILE_DIR):
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = r"upload/product_image"
+
+BASE_URL = "http://13.215.201.101:8080"

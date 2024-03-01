@@ -25,6 +25,7 @@ from routers.company import company_router
 from routers.customized_information import customized_information_router
 from routers.video import video_router
 from routers.banner import banner_router
+from routers.traceability import traceability_router
 from journal import log
 from auth import (
     jwt,
@@ -147,6 +148,13 @@ app.include_router(
     banner_router,
     tags=["banner管理", "内容发布"],
     prefix="/banner",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    traceability_router,
+    tags=["溯源管理"],
+    prefix="/traceability",
     dependencies=[Depends(oauth2_scheme)],
 )
 

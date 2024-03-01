@@ -445,6 +445,7 @@ async def create_privilege(
 async def update_privilege(
     id: int = Body(..., description="权益ID"),
     name: Union[str] = Body(None, description="权益名称"),
+    privilege_type: Union[str] = Body(None, description="权益类型"),
     description: Union[str] | None = Body(None, description="权益描述"),
     effective_time: Optional[str] = Body(
         None, description="生效时间", examples=["2021-01-01 00:00:00"]
@@ -456,6 +457,7 @@ async def update_privilege(
     """
     # 更新权益
     - id: 权益ID
+    - privilege_type: 权益类型, 选填
     - name: 权益名称, 选填
     - description: 权益描述, 选填
 
@@ -470,6 +472,8 @@ async def update_privilege(
                 )
             if name:
                 privilege.name = name
+            if privilege_type:
+                privilege.privilege_type = privilege_type
             if description:
                 privilege.description = description
             if effective_time:

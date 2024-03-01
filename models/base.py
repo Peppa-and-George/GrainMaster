@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_serializer, ConfigDict
-from typing import Any, List, Optional
+from typing import Any, List, Optional, ForwardRef
 from datetime import datetime
 
 
@@ -124,9 +124,6 @@ class ClientSchema(BaseModel):
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
     addresses: Optional[List[AddressSchema]] = Field(description="地址列表", default=[])
-    privileges: Optional[List["ClientPrivilegeRelationSchema"]] = Field(
-        description="权益列表", default=[]
-    )
 
     @field_serializer("create_time", "update_time", "delete_time")
     def format_time(self, v: Any) -> Any:
@@ -168,6 +165,7 @@ class ClientPrivilegeRelationSchema(BaseModel):
     usage: Optional[List["PrivilegeUsageSchema"]] = Field(
         description="权益使用信息", default=[]
     )
+    client: Optional["ClientSchema"] = Field(description="客户信息", default={})
 
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:

@@ -1,14 +1,15 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Query, status, Body, Form, UploadFile, File
+from fastapi import APIRouter, Query, status, Body, Form, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 
 from dependency.report import save_report, delete_report
 from schema.common import page_with_order
 from schema.database import SessionLocal
-from schema.tables import Quality, Plan, Location
+from schema.tables import Quality, Plan, Location, Warehouse
 from models.base import QualitySchema
+from auth import get_user_by_request
 
 report_router = APIRouter()
 
@@ -59,70 +60,80 @@ async def filter_quality_api(
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "success", "data": response},
+            content=response,
         )
 
 
 @report_router.post("/upload_report", summary="创建质报告")
 async def create_quality(
-    plan_id: int = Form(..., description="计划id"),
-    report_name: str = Form(..., description="质检报告名称"),
-    upload_people: str = Form(..., description="上传人"),
-    file: UploadFile = File(..., description="质检报告"),
+    req: Request,
+    warehouse_id: int = Form(..., description="仓库id"),
+    report_name: Optional[str] = Form(None, description="质检报告名称"),
+    file: Optional[UploadFile] = File(None, description="质检报告"),
 ):
     """
     # 创建质报告
-    - **plan_id**: 计划id
-    - **upload_people**: 上传人
-    - **report**: 质检报告
+    - **warehouse_id**: 仓库id, 必填
+    - **report_name**: 质检报告名称, str, 可选
+    - **file**: 质检报告, 可选
     """
-    filename = save_report(file)
+    filename = save_report(file) if file else None
     with SessionLocal() as db:
+        warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
+        if not warehouse:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "仓储加工环节不存在"},
+            )
+        report_name = report_name if report_name else file.filename
         quality = Quality(
-            plan_id=plan_id,
             name=report_name,
-            people=upload_people,
             report=filename,
-            upload_time=datetime.now(),
+            status="已上传" if filename else "未上传",
+            people=get_user_by_request(req).get("sub") if file else None,
+            upload_time=datetime.now() if file else None,
         )
+        quality.plan = warehouse.plan
         db.add(quality)
         db.commit()
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "success"},
-        )
 
 
 @report_router.put("/update_report", summary="更新质报告")
 async def update_quality(
-    report_id: int = Body(..., description="质检报告id"),
-    report_name: Optional[str] = Body(None, description="质检报告名称"),
-    upload_people: Optional[str] = Body(None, description="上传人"),
-    file: UploadFile = File(None, description="质检报告"),
+    req: Request,
+    report_id: int = Form(..., description="质检报告id"),
+    report_name: Optional[str] = Form(None, description="质检报告名称"),
+    file: Optional[UploadFile] = File(None, description="质检报告"),
 ):
     """
     # 更新质报告
     - **report_id**: 质检报告id
-    - **upload_people**: 上传人
-    - **report**: 质检报告
+    - **report_name**: 质检报告名称, 可选
+    - **file**: 质检报告, 可选, 文件类型
     """
     with SessionLocal() as db:
         quality = db.query(Quality).filter(Quality.id == report_id).first()
-        quality.people = upload_people
+        if not quality:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "质检记录不存在"},
+            )
         if file:
-            filename = save_report(file)
             delete_report(quality.report)
+            filename = save_report(file)
             quality.report = filename
+            quality.status = "已上传"
+            quality.people = get_user_by_request(req).get("sub")
+            quality.upload_time = datetime.now()
         if report_name:
             quality.name = report_name
-        if upload_people:
-            quality.people = upload_people
-        quality.status = "已上传"
-        quality.upload_time = datetime.now()
+        else:
+            if file:
+                quality.name = file.filename
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "success"},
+            content={"code": 0, "message": "更新成功"},
         )
 
 

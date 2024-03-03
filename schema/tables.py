@@ -35,13 +35,13 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True, nullable=False, comment="产品名称", name="name")
-    introduction = Column(String, nullable=True, comment="产品介绍", name="introduction")
-    price = Column(Float, nullable=False, comment="价格", name="price")
-    unit = Column(Float, nullable=False, comment="规格(L)", name="unit")
-    icon = Column(String, nullable=False, comment="产品图片路径", name="icon")
+    introduction = Column(String, comment="产品介绍", name="introduction")
+    price = Column(Float, comment="价格", name="price")
+    unit = Column(Float, comment="规格(L)", name="unit")
+    amount = Column(Integer, comment="库存", name="amount", default=0)
+    icon = Column(String, comment="产品图片路径", name="icon")
     synchronize = Column(
         Boolean,
-        nullable=False,
         comment="是否同步小程序",
         default=False,
         name="synchronize",
@@ -531,23 +531,11 @@ class Transport(Base):
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
     )
-    loading_worker = Column(String(50), comment="装车人员", name="loading_worker")
-    driver = Column(String(50), comment="运输人员", name="driver")
-    unload_worker = Column(String(50), comment="卸货人员", name="unload_worker")
-    unload_place = Column(String(50), comment="卸货地点", name="unload_place")
-    air_worker = Column(String(50), comment="晾晒人员", name="air_worker")
-    clean_worker = Column(String(50), comment="清选人员", name="clean_worker")
-    after_clean_driver = Column(
-        String(50), comment="清选后运输人员", name="after_clean_driver"
-    )
-    after_unload_worker = Column(
-        String(50), comment="清选后卸货人员", name="after_unload_worker"
-    )
-    after_unload_place = Column(
-        String(50), comment="清选后卸货地点", name="after_unload_place"
-    )
-    notices = Column(Text, comment="备注", name="notices")
-    status = Column(String(50), comment="状态", name="status", default="未开始")
+    loading_place = Column(String(50), comment="装车地点", name="loading_place")
+    unloading_place = Column(String(50), comment="卸车地点", name="unloading_place")
+    driver = Column(String(50), comment="运输人员", name="driver", default=None)
+    remark = Column(Text, comment="备注", name="remark")
+    status = Column(String(50), comment="状态", name="status", default="准备运输")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"

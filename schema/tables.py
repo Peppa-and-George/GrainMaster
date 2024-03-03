@@ -645,7 +645,8 @@ class Quality(Base):
     __tablename__ = "quality"  # noqa
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
-    warehouse_id = Column(ForeignKey("warehouse.id", ondelete=""), comment="仓库")
+    type = Column(String(50), comment="质检类型", name="type")
+    warehouse_id = Column(ForeignKey("warehouse.id", ondelete="CASCADE"), comment="仓库")
     name = Column(String(50), comment="报告名称", name="name")
     people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")

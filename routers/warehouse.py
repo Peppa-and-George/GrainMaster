@@ -176,6 +176,7 @@ async def add_warehouse(
                 name="质检报告",
                 upload_time=datetime.now(),
                 status="未上传",
+                type="仓储加工",
             )
             quality.plan = plan
             warehouse.qualities.append(quality)

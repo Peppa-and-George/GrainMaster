@@ -346,6 +346,7 @@ class QualitySchema(BaseModel):
     id: int = Field(description="质检报告ID")
     plan_id: Optional[int] = Field(description="计划ID")
     warehouse_id: Optional[int] = Field(description="仓储加工ID")
+    type: Optional[str] = Field(description="质检类型")
     name: Optional[str] = Field(description="质检报告名称")
     people: Optional[str] = Field(description="质检人员", default=None)
     status: Optional[str] = Field(description="质检状态", default=None)

@@ -22,6 +22,9 @@ async def filter_quality_api(
     report_status: Optional[str] = Query(
         None, description="报告上传状态", examples=["已上传", "未上传"]
     ),
+    report_type: Optional[Literal["仓储加工", "原料运输"]] = Query(
+        None, description="报告类型", examples=["仓储加工", "原料运输"]
+    ),
     order_field: str = Query("id", description="排序字段"),
     order_desc: Literal["asc", "desc"] = Query("asc", description="是否降序"),
     page: int = Query(1, description="页码"),
@@ -33,6 +36,7 @@ async def filter_quality_api(
     - **batch**: 批次, 可选
     - **location_name**: 位置, 可选
     - **report_status**: 报告上传状态, 可选, 一般设置为"已上传"和"为上传"
+    - **report_type**: 报告类型, 可选, 一般设置为"仓储加工"和"原料运输"
     - **order_field**: 排序字段, 默认为id
     - **order_desc**: 是否降序, 默认为asc
     - **page**: 页码, 默认为1
@@ -49,6 +53,8 @@ async def filter_quality_api(
             query = query.filter(Plan.location_id == location.id)
         if report_status:
             query = query.filter(Quality.report_status == report_status)
+        if report_type:
+            query = query.filter(Quality.type == report_type)
 
         response = page_with_order(
             schema=QualitySchema,
@@ -68,6 +74,7 @@ async def filter_quality_api(
 async def create_quality(
     req: Request,
     warehouse_id: int = Form(..., description="仓库id"),
+    report_type: Literal["仓储加工", "原料运输"] = Form(..., description="报告类型"),
     report_name: Optional[str] = Form(None, description="质检报告名称"),
     file: Optional[UploadFile] = File(None, description="质检报告"),
 ):
@@ -76,6 +83,7 @@ async def create_quality(
     - **warehouse_id**: 仓库id, 必填
     - **report_name**: 质检报告名称, str, 可选
     - **file**: 质检报告, 可选
+    - **report_type**: 报告类型, 必填 范围：仓储加工|原料运输
     """
     filename = save_report(file) if file else None
     with SessionLocal() as db:
@@ -89,6 +97,7 @@ async def create_quality(
         quality = Quality(
             name=report_name,
             report=filename,
+            type=report_type,
             status="已上传" if filename else "未上传",
             people=get_user_by_request(req).get("sub") if file else None,
             upload_time=datetime.now() if file else None,
@@ -102,6 +111,7 @@ async def create_quality(
 async def update_quality(
     req: Request,
     report_id: int = Form(..., description="质检报告id"),
+    report_type: Optional[Literal["仓储加工", "原料运输"]] = Form(None, description="报告类型"),
     report_name: Optional[str] = Form(None, description="质检报告名称"),
     file: Optional[UploadFile] = File(None, description="质检报告"),
 ):
@@ -110,6 +120,7 @@ async def update_quality(
     - **report_id**: 质检报告id
     - **report_name**: 质检报告名称, 可选
     - **file**: 质检报告, 可选, 文件类型
+    - **report_type**: 报告类型, 可选 范围：仓储加工|原料运输
     """
     with SessionLocal() as db:
         quality = db.query(Quality).filter(Quality.id == report_id).first()
@@ -130,6 +141,8 @@ async def update_quality(
         else:
             if file:
                 quality.name = file.filename
+        if report_type:
+            quality.type = report_type
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,

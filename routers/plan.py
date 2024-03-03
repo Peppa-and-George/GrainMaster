@@ -128,12 +128,12 @@ async def add_plan(
                 batch=batch,
                 create_people=create_people,
             )
-            db.flush()
-            quality = Quality(
-                status="未上传",
-            )
-            quality.plan = plan
-            plan.qualities.append(quality)
+            # db.flush()
+            # quality = Quality(
+            #     status="未上传",
+            # )
+            # quality.plan = plan
+            # plan.qualities.append(quality)
 
             # 添加溯源记录
             traceability = Traceability(

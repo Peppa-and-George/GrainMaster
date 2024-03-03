@@ -1,6 +1,6 @@
-from typing import Literal
+from typing import Literal, Optional
 
-from fastapi import Query, HTTPException, status, Body
+from fastapi import Query, HTTPException, status, Body, Form, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from models.base import ProductSchema
@@ -8,7 +8,7 @@ from schema.common import page_with_order
 from schema.product import get_products, get_products_by_name
 from schema.database import SessionLocal
 
-from dependency.image import save_image, delete_image
+from dependency.image import save_image, delete_image, save_upload_image
 from schema.tables import Product
 
 product_router = APIRouter()
@@ -135,11 +135,12 @@ async def get_product_api(
 )
 async def add_product_api(
     product_name: str = Body(..., description="商品名称"),
-    introduction: str = Body("", description="商品介绍"),
-    price: float = Body(..., description="商品价格"),
-    unit: float = Body(..., description="商品规格"),
-    icon: str = Body(..., description="商品图片"),
-    synchronize: bool = Body(False, description="是否同步"),
+    introduction: Optional[str] = Body(None, description="商品介绍"),
+    price: Optional[float] = Body(None, description="商品价格"),
+    unit: Optional[float] = Body(None, description="商品规格"),
+    icon: Optional[str] = Body(None, description="商品图片"),
+    synchronize: Optional[bool] = Body(False, description="是否同步"),
+    amount: Optional[int] = Body(None, description="数量", examples=[100, 200]),
 ):
     """
     # 添加商品
@@ -150,9 +151,11 @@ async def add_product_api(
     - **unit**: 规格，浮点数，必填
     - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
     - **synchronize**: 是否同步，布尔值，默认值false可选
+    - **amount**: 数量，整型，可选
     """
     try:
-        icon = save_image(icon)
+        icon = save_image(icon) if icon else None
+
         with SessionLocal() as db:
             product = Product(
                 **{
@@ -162,6 +165,7 @@ async def add_product_api(
                     "unit": unit,
                     "icon": icon,
                     "synchronize": synchronize,
+                    "amount": amount if amount else 0,
                 }
             )
             db.add(product)
@@ -177,43 +181,61 @@ async def add_product_api(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @product_router.post(
-#     "/add_products", summary="批量添加商品", response_model=AddProductsResponseModel
-# )
-# async def add_products_api(
-#     products: List[AddProductModel] = Depends(save_images),
-# ):
-#     """
-#     # 批量添加商品
-#     ## params
-#     - **productName**: 商品名称，字符串， 必填
-#     - **introduction**: 商品介绍，字符串，可选
-#     - **price**: 价格，浮点数，必填
-#     - **unit**: 规格，浮点数，必填
-#     - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
-#     - **synchronize**: 是否同步，布尔值，默认值false可选
-#     """
-#     try:
-#         add_products([Product(**product.model_dump()) for product in products])
-#         return JSONResponse(
-#             status_code=status.HTTP_200_OK,
-#             content=AddProductsResponseModel(
-#                 **{"code": 0, "message": "添加成功"}
-#             ).model_dump(),
-#         )
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-#
-#
+@product_router.post("add_product_form", summary="添加商品（参数为表单）")
+async def add_product_form_api(
+    product_name: str = Form(..., description="商品名称"),
+    introduction: Optional[str] = Form(None, description="商品介绍"),
+    price: Optional[float] = Form(None, description="商品价格"),
+    unit: Optional[float] = Form(None, description="商品规格"),
+    icon: Optional[UploadFile] = File(None, description="商品图片"),
+    synchronize: Optional[bool] = Form(False, description="是否同步"),
+    amount: Optional[int] = Form(0, description="数量", examples=[100, 200]),
+):
+    """
+    # 添加商品, 表单参数
+    ## params
+    - **productN_name**: 商品名称，字符串， 必填
+    - **introduction**: 商品介绍，字符串，可选
+    - **price**: 价格，浮点数，必填
+    - **unit**: 规格，浮点数，必填
+    - **icon**: base64格式图片，字符串，必填, 示例：data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAY
+    - **synchronize**: 是否同步，布尔值，默认值false可选
+    - **amount**: 数量，整型，可选
+    """
+    try:
+        icon = save_upload_image(icon) if icon else None
+        with SessionLocal() as db:
+            product = Product(
+                name=product_name,
+                introduction=introduction,
+                price=price,
+                unit=unit,
+                icon=icon,
+                synchronize=synchronize,
+                amount=amount,
+            )
+            db.add(product)
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                },
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @product_router.put("/update_product", summary="更新商品")
 async def update_product_api(
     product_id: int = Body(..., description="商品id"),
-    product_name: str = Body(None, description="商品名称"),
-    introduction: str = Body(None, description="商品介绍"),
-    price: float = Body(None, description="商品价格"),
-    unit: float = Body(None, description="商品规格"),
-    icon: str = Body(None, description="商品图片"),
-    synchronize: bool = Body(None, description="是否同步"),
+    product_name: Optional[str] = Body(None, description="商品名称"),
+    introduction: Optional[str] = Body(None, description="商品介绍"),
+    price: Optional[float] = Body(None, description="商品价格"),
+    unit: Optional[float] = Body(None, description="商品规格"),
+    icon: Optional[str] = Body(None, description="商品图片"),
+    synchronize: Optional[bool] = Body(None, description="是否同步"),
 ):
     """
     # 更新商品
@@ -245,7 +267,64 @@ async def update_product_api(
             if unit is not None:
                 product.unit = unit
             if icon is not None:
+                delete_image(product.icon)
                 product.icon = save_image(icon)
+            if synchronize is not None:
+                product.synchronize = synchronize
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 0,
+                    "message": "更新成功",
+                },
+            )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@product_router.put("/update_product_form", summary="更新商品（参数为表单）")
+async def update_product_form_api(
+    product_id: int = Form(..., description="商品id"),
+    product_name: Optional[str] = Form(None, description="商品名称"),
+    introduction: Optional[str] = Form(None, description="商品介绍"),
+    price: Optional[float] = Form(None, description="商品价格"),
+    unit: Optional[float] = Form(None, description="商品规格"),
+    icon: Optional[UploadFile] = File(None, description="商品图片"),
+    synchronize: Optional[bool] = Form(None, description="是否同步"),
+):
+    """
+    # 更新商品, 表单参数
+    - **id**: 商品ID, 整型，必填
+    - **product_name**: 商品名称，字符串， 可选
+    - **introduction**: 商品介绍，字符串，可选
+    - **price**: 价格，浮点数，可选
+    - **unit**: 规格，浮点数，可选
+    - **icon**: 图片二进制数据
+    - **synchronize**: 是否同步，布尔值，默认值false可选
+    """
+    try:
+        with SessionLocal() as db:
+            product = db.query(Product).filter_by(id=product_id).first()
+            if product is None:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={
+                        "code": 1,
+                        "message": "更新失败, 该商品不存在",
+                    },
+                )
+            if product_name is not None:
+                product.name = product_name
+            if introduction is not None:
+                product.introduction = introduction
+            if price is not None:
+                product.price = price
+            if unit is not None:
+                product.unit = unit
+            if icon is not None:
+                delete_image(product.icon)
+                product.icon = save_upload_image(icon)
             if synchronize is not None:
                 product.synchronize = synchronize
             db.commit()

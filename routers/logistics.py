@@ -1,6 +1,6 @@
 # 物流计划
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Union, Optional
 
 from fastapi import APIRouter, Query, status, Body, HTTPException
 from fastapi.responses import JSONResponse
@@ -68,8 +68,9 @@ async def get_logistics(
 
 @logistics_router.post("/add_logistics", summary="添加物流计划")
 async def add_logistics(
-    order_number: Optional[str] = Body(None, description="订单编号"),
-    order_id: Optional[int] = Body(None, description="订单id"),
+    order: Union[int, str] = Body(..., description="订单标识"),
+    order_field_type: Literal["id", "num"] = Body("id", description="订单标识类型"),
+    amount: int = Body(..., description="发货数量"),
     address_id: int = Body(..., description="地址id"),
     operate_date: str = Body(
         ..., description="计划操作日期", examples=["2021-01-01 00:00:00"]
@@ -88,16 +89,11 @@ async def add_logistics(
     - **operate_people**: 计划操作人
     - **notices**: 备注
     """
-    if not order_number and not order_id:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"code": 1, "message": "订单编号或订单id必须有一个"},
-        )
     with SessionLocal() as db:
-        if order_id:
-            order = db.query(Order).filter(Order.id == order_id).first()
+        if order_field_type == "id":
+            order = db.query(Order).filter(Order.id == order).first()
         else:
-            order = db.query(Order).filter(Order.order_number == order_number).first()
+            order = db.query(Order).filter(Order.order_number == order).first()
 
         # 验证地址是否存在
         address = (
@@ -115,12 +111,19 @@ async def add_logistics(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "订单不存在"},
             )
+        # 验证发货数量
+        if amount > order.total_amount:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "发货数量不能大于订单数量"},
+            )
 
         logistics = LogisticsPlan(
             order_id=order.id,
             order_number=order.order_number,
             address_id=address_id,
             plan_id=order.plan_id,
+            amount=amount,
             operate_date=datetime.strptime(operate_date, "%Y-%m-%d %H:%M:%S"),
             operate_people=operate_people,
             notices=notices,
@@ -170,10 +173,11 @@ async def update_logistics_status(
 @logistics_router.put("/update_logistics", summary="修改物流计划")
 async def update_logistics(
     logistics_id: int = Body(..., description="物流计划id"),
-    address_id: int = Body(None, description="地址id"),
-    operate_date: str = Body(None, description="计划操作日期"),
-    operate_people: str = Body(None, description="计划操作人"),
-    notices: str = Body(None, description="备注"),
+    address_id: Optional[int] = Body(None, description="地址id"),
+    amount: Optional[int] = Body(None, description="发货数量"),
+    operate_date: Optional[str] = Body(None, description="计划操作日期"),
+    operate_people: Optional[str] = Body(None, description="计划操作人"),
+    notices: Optional[str] = Body(None, description="备注"),
 ):
     """
     # 修改物流计划
@@ -204,6 +208,14 @@ async def update_logistics(
                 logistics.operate_people = operate_people
             if notices:
                 logistics.notices = notices
+            if amount:
+                # 验证发货数量
+                if amount > logistics.order.total_amount:
+                    return JSONResponse(
+                        status_code=status.HTTP_200_OK,
+                        content={"code": 1, "message": "发货数量不能大于订单数量"},
+                    )
+                logistics.amount = amount
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,

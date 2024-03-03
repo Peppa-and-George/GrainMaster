@@ -308,6 +308,7 @@ class LogisticsPlanSchema(BaseModel):
     operate_people: Optional[str] = Field(description="操作人员")
     order_id: Optional[int] = Field(description="订单ID")
     order_number: Optional[str] = Field(description="订单编号")
+    amount: Optional[int] = Field(description="发货数量")
     notices: Optional[str] = Field(description="备注")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")

@@ -614,6 +614,7 @@ class LogisticsPlan(Base):
     order_number = Column(String(64), comment="订单编号", name="order_number")
     address_id = Column(ForeignKey("address.id"))
     status = Column(String(50), comment="状态", name="status", default="未开始")
+    amount: int = Column(Integer, comment="发货数量", name="amount")
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
     )

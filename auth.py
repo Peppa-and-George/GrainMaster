@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import Union
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from fastapi import Request
 
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
@@ -23,7 +24,9 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, base64.b64decode(hashed_password).decode())
+    return pwd_context.verify(
+        plain_password, base64.b64decode(hashed_password).decode()
+    )
 
 
 def get_password_hash(password):
@@ -36,3 +39,11 @@ def get_base64_password(password):
 
 def decode_token(token):
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+
+def get_user_by_request(req: Request):
+    token = req.headers.get("Authorization")
+    if not token:
+        return None
+    current_user = decode_token(token.replace("Bearer ", ""))
+    return current_user

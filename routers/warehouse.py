@@ -173,8 +173,7 @@ async def add_warehouse(
 
             # 添加质检报告记录
             quality = Quality(
-                name="质检报告",
-                upload_time=datetime.now(),
+                name="仓储加工质检报告",
                 status="未上传",
                 type="仓储加工",
             )

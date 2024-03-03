@@ -91,13 +91,13 @@ app.include_router(
 )
 app.include_router(
     transport_router,
-    tags=["运输管理"],
+    tags=["原料运输管理"],
     prefix="/transport",
     dependencies=[Depends(oauth2_scheme)],
 )
 app.include_router(
     warehouse_router,
-    tags=["仓储管理"],
+    tags=["仓储加工管理"],
     prefix="/warehouse",
     dependencies=[Depends(oauth2_scheme)],
 )

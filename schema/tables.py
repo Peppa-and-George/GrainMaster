@@ -555,6 +555,9 @@ class Transport(Base):
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="transports", foreign_keys=[plan_id]
     )
+    qualities: Mapped[List["Quality"]] = relationship(
+        "Quality", back_populates="transport"
+    )
 
 
 class Warehouse(Base):
@@ -647,7 +650,12 @@ class Quality(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
     type = Column(String(50), comment="质检类型", name="type")
-    warehouse_id = Column(ForeignKey("warehouse.id", ondelete="CASCADE"), comment="仓库")
+    warehouse_id = Column(
+        ForeignKey("warehouse.id", ondelete="CASCADE"), comment="仓储加工ID"
+    )
+    transport_id = Column(
+        ForeignKey("transport.id", ondelete="CASCADE"), comment="原料运输ID"
+    )
     name = Column(String(50), comment="报告名称", name="name")
     people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
@@ -670,6 +678,9 @@ class Quality(Base):
     )
     warehouse: Mapped["Warehouse"] = relationship(
         "Warehouse", back_populates="qualities", foreign_keys=[warehouse_id]
+    )
+    transport: Mapped["Transport"] = relationship(
+        "Transport", back_populates="qualities", foreign_keys=[transport_id]
     )
 
 

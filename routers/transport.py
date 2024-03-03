@@ -5,7 +5,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Query, status, Body
 from fastapi.responses import JSONResponse
 
-from schema.tables import Transport, Plan, Location
+from schema.tables import Transport, Plan, Location, Quality
 from schema.common import page_with_order
 from schema.database import SessionLocal
 from models.base import TransportSchema
@@ -106,6 +106,10 @@ async def add_transport_api(
                 loading_place=loading_place,
                 remark=remark,
             )
+
+            quality = Quality(type="原料运输", status="未上传", name="原料运输质检报告")
+            transport.qualities.append(quality)
+
             db.add(transport)
             db.commit()
             return JSONResponse(

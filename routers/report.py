@@ -70,7 +70,11 @@ async def filter_quality_api(
         )
 
 
-@report_router.post("/upload_report", summary="创建质报告")
+@report_router.post(
+    "/create_report",
+    summary="创建质检报告",
+    deprecated=True,
+)
 async def create_quality(
     req: Request,
     warehouse_id: int = Form(..., description="仓库id"),

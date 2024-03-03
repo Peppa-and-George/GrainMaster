@@ -59,6 +59,9 @@ class Product(Base):
     )
 
     orders: Mapped[List["Order"]] = relationship("Order", back_populates="product")
+    warehouses: Mapped[List["Warehouse"]] = relationship(
+        "Warehouse", back_populates="product"
+    )
 
 
 class Camera(Base):
@@ -404,6 +407,7 @@ class Order(Base):
     camera: Mapped["Camera"] = relationship(
         "Camera", foreign_keys=[camera_id], back_populates="orders"
     )
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse", back_populates="order")
 
 
 class Express(Base):
@@ -557,7 +561,10 @@ class Warehouse(Base):
     __tablename__ = "warehouse"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
-    status = Column(String(50), comment="状态", name="status", default="未开始")
+    product_id = Column(ForeignKey("product.id"))
+    order_id = Column(ForeignKey("order.id"))
+    amount = Column(Integer, comment="数量", name="amount")
+    status = Column(String(50), comment="状态", name="status", default="准备加工")
 
     operate_date = Column(
         DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
@@ -587,6 +594,15 @@ class Warehouse(Base):
 
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="warehouses", foreign_keys=[plan_id]
+    )
+    order: Mapped["Order"] = relationship(
+        "Order", back_populates="warehouse", foreign_keys=[order_id]
+    )
+    product: Mapped["Product"] = relationship(
+        "Product", back_populates="warehouses", foreign_keys=[product_id]
+    )
+    qualities: Mapped[List["Quality"]] = relationship(
+        "Quality", back_populates="warehouse"
     )
 
 
@@ -629,6 +645,7 @@ class Quality(Base):
     __tablename__ = "quality"  # noqa
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
+    warehouse_id = Column(ForeignKey("warehouse.id", ondelete=""), comment="仓库")
     name = Column(String(50), comment="报告名称", name="name")
     people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
@@ -648,6 +665,9 @@ class Quality(Base):
 
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="qualities", foreign_keys=[plan_id]
+    )
+    warehouse: Mapped["Warehouse"] = relationship(
+        "Warehouse", back_populates="qualities", foreign_keys=[warehouse_id]
     )
 
 

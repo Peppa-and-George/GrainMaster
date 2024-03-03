@@ -33,8 +33,9 @@ class ProductSchema(BaseModel):
     introduction: Optional[str] = Field(description="商品简介", default="")
     price: Optional[float] = Field(description="商品价格")
     unit: Optional[float] = Field(description="商品规格")
+    amount: Optional[int] = Field(description="商品数量")
     icon: Optional[str] = Field(description="商品图片")
-    synchronize: bool = Field(description="是否同步", default=False)
+    synchronize: Optional[bool] = Field(description="是否同步", default=False)
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
@@ -227,19 +228,13 @@ class OperationSchema(BaseModel):
 
 class TransportSchema(BaseModel):
     id: int = Field(description="运输ID")
-    plant_id: Optional[int] = Field(description="种植ID")
+    plan_id: Optional[int] = Field(description="种植ID")
     operate_date: Optional[datetime] = Field(description="操作时间")
-    loading_worker: Optional[str] = Field(description="装车人")
     driver: Optional[str] = Field(description="运输人员")
-    unload_worker: Optional[str] = Field(description="卸车人")
-    unload_place: Optional[str] = Field(description="卸车地点")
-    air_worker: Optional[str] = Field(description="晾晒人员")
-    clean_worker: Optional[str] = Field(description="清洗人员")
-    after_clean_driver: Optional[str] = Field(description="清洗后运输人员")
-    after_unload_worker: Optional[str] = Field(description="清洗后卸车人员")
-    after_unload_place: Optional[str] = Field(description="清洗后卸车地点")
-    notices: Optional[str] = Field(description="备注")
+    unloading_place: Optional[str] = Field(description="卸车地点")
+    loading_place: Optional[str] = Field(description="装车地点")
     status: Optional[str] = Field(description="状态")
+    remark: Optional[str] = Field(description="备注")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
@@ -253,6 +248,11 @@ class TransportSchema(BaseModel):
 class WarehouseSchema(BaseModel):
     id: int = Field(description="仓库ID")
     plan_id: Optional[int] = Field(description="计划ID")
+    product_id: Optional[int] = Field(description="产品ID")
+    order_id: Optional[int] = Field(description="订单ID")
+    amount: Optional[int] = Field(description="数量")
+
+    status: Optional[str] = Field(description="状态")
     operate_date: Optional[datetime] = Field(description="计划操作日期")
     feeding_place: Optional[str] = Field(description="投料口转运")
     feeding_warehouse: Optional[str] = Field(description="投料仓转运地点")
@@ -345,6 +345,7 @@ class CameraSchema(BaseModel):
 class QualitySchema(BaseModel):
     id: int = Field(description="质检报告ID")
     plan_id: Optional[int] = Field(description="计划ID")
+    warehouse_id: Optional[int] = Field(description="仓储加工ID")
     name: Optional[str] = Field(description="质检报告名称")
     people: Optional[str] = Field(description="质检人员", default=None)
     status: Optional[str] = Field(description="质检状态", default=None)

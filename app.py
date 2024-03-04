@@ -26,6 +26,7 @@ from routers.customized_information import customized_information_router
 from routers.video import video_router
 from routers.banner import banner_router
 from routers.traceability import traceability_router
+from routers.applets_order import applets_order_router
 from journal import log
 from auth import (
     jwt,
@@ -155,6 +156,13 @@ app.include_router(
     traceability_router,
     tags=["溯源管理"],
     prefix="/traceability",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    applets_order_router,
+    tags=["小程序订单"],
+    prefix="/applets_order",
     dependencies=[Depends(oauth2_scheme)],
 )
 

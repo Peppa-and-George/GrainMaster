@@ -36,8 +36,8 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True, nullable=False, comment="产品名称", name="name")
     introduction = Column(String, comment="产品介绍", name="introduction")
-    price = Column(Float, comment="价格", name="price")
-    unit = Column(Float, comment="规格(L)", name="unit")
+    price = Column(Float, comment="价格", name="price", default=0.01)
+    unit = Column(Float, comment="规格(L)", name="unit", default=9999)
     amount = Column(Integer, comment="库存", name="amount", default=0)
     icon = Column(String, comment="产品图片路径", name="icon")
     synchronize = Column(
@@ -61,6 +61,9 @@ class Product(Base):
     orders: Mapped[List["Order"]] = relationship("Order", back_populates="product")
     warehouses: Mapped[List["Warehouse"]] = relationship(
         "Warehouse", back_populates="product"
+    )
+    applets_order_details: Mapped[List["AppletsOrderDetail"]] = relationship(
+        "AppletsOrderDetail", back_populates="product"
     )
 
 
@@ -179,6 +182,9 @@ class Client(Base):
     privilege_usages: Mapped[List["PrivilegeUsage"]] = relationship(
         "PrivilegeUsage", back_populates="client"
     )
+    applets_orders: Mapped[List["AppletsOrder"]] = relationship(
+        "AppletsOrder", back_populates="client"
+    )
 
 
 class ClientPrivilege(Base):
@@ -273,6 +279,9 @@ class Address(Base):
     express: Mapped["Express"] = relationship("Express", back_populates="address")
     logistics_plans: Mapped[List["LogisticsPlan"]] = relationship(
         "LogisticsPlan", back_populates="address"
+    )
+    applets_orders: Mapped[List["AppletsOrder"]] = relationship(
+        "AppletsOrder", back_populates="address"
     )
 
 
@@ -780,7 +789,7 @@ class Video(Base):
 class Traceability(Base):
     __tablename__ = "traceability"  # noqa
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
+    plan_id = Column(ForeignKey("plan.id"))
     traceability_code = Column(
         String(64), comment="溯源码", name="traceability_code", unique=True
     )
@@ -800,4 +809,69 @@ class Traceability(Base):
 
     plan: Mapped["Plan"] = relationship(
         "Plan", back_populates="traceability", foreign_keys=[plan_id]
+    )
+
+
+class AppletsOrder(Base):
+    # 小程序订单
+    __tablename__ = "applets_order"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    order_number = Column(
+        String(64), nullable=False, comment="订单编号", name="order_number", unique=True
+    )
+    client_id = Column(ForeignKey("client.id"), nullable=False, comment="客户")
+    address_id = Column(ForeignKey("address.id"), nullable=False, comment="地址")
+    amounts_payable = Column(
+        Float, comment="应付金额", name="amounts_payable", nullable=False
+    )
+    payment_amount = Column(Float, comment="支付金额", name="payment_amount")
+    payment_method = Column(String(100), comment="支付方式", name="payment_method")
+    payment_time = Column(DateTime, comment="支付时间", name="payment_time")
+    status = Column(String(100), nullable=False, comment="订单状态", name="status")
+    complete_time = Column(DateTime, comment="完成时间", name="complete_time")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    details: Mapped[List["AppletsOrderDetail"]] = relationship(
+        "AppletsOrderDetail", back_populates="order"
+    )
+    client: Mapped["Client"] = relationship(
+        "Client", back_populates="applets_orders", foreign_keys=[client_id]
+    )
+    address: Mapped["Address"] = relationship(
+        "Address", back_populates="applets_orders", foreign_keys=[address_id]
+    )
+
+
+class AppletsOrderDetail(Base):
+    # 小程序订单详情
+    __tablename__ = "applets_order_detail"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    order_id = Column(ForeignKey("applets_order.id"))
+    product_id = Column(ForeignKey("product.id"))
+    quantity = Column(Integer, comment="数量", name="quantity")
+    price = Column(Float, comment="价格", name="price")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    order: Mapped["AppletsOrder"] = relationship(
+        "AppletsOrder", back_populates="details", foreign_keys=[order_id]
+    )
+    product: Mapped["Product"] = relationship(
+        "Product", back_populates="applets_order_details", foreign_keys=[product_id]
     )

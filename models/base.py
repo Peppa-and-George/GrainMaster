@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_serializer, ConfigDict
-from typing import Any, List, Optional, ForwardRef
+from typing import Any, List, Optional, ForwardRef, Literal
 from datetime import datetime
 
 
@@ -395,5 +395,57 @@ class PrivilegeUsageSchema(BaseModel):
     @field_serializer("create_time", "update_time", "used_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AppletsOrderBaseSchema(BaseModel):
+    id: int = Field(description="订单ID")
+    order_number: str = Field(description="订单编号")
+    client_id: Optional[int] = Field(description="客户ID")
+    address_id: Optional[int] = Field(description="地址ID")
+    amounts_payable: Optional[float] = Field(description="应付金额")
+    payment_amount: Optional[float] = Field(description="实付金额")
+    payment_method: Optional[str] = Field(description="支付方式")
+    payment_time: Optional[datetime] = Field(description="支付时间")
+    status: Optional[str] = Field(description="订单状态")
+    complete_time: Optional[datetime] = Field(description="完成时间")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "complete_time", "payment_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AppletsOrderDetailBaseSchema(BaseModel):
+    id: int = Field(description="订单详情ID")
+    order_id: Optional[int] = Field(description="订单ID")
+    product_id: Optional[int] = Field(description="产品ID")
+    quantity: Optional[int] = Field(description="数量")
+    price: Optional[float] = Field(description="单价")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AppletsOrderSchema(AppletsOrderBaseSchema):
+    details: Optional[List[AppletsOrderDetailBaseSchema]] = Field(description="订单详情")
+    client: Optional[ClientSchema] = Field(description="客户信息")
+    address: Optional[AddressSchema] = Field(description="地址信息")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AppletsOrderDetailSchema(AppletsOrderDetailBaseSchema):
+    product: Optional[ProductSchema] = Field(description="产品信息")
+    order: Optional[AppletsOrderBaseSchema] = Field(description="订单信息")
 
     model_config = ConfigDict(from_attributes=True)

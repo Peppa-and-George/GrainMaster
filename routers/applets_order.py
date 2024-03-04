@@ -190,7 +190,7 @@ async def create_applets_order_api(
 @applets_order_router.post("/pay_applets_order", summary="支付小程序订单")
 async def pay_applets_order_api(
     order: Union[int, str] = Body(..., description="订单号"),
-    field_type: Literal["num", "id"] = Query("num", description="订单号字段类型"),
+    field_type: Literal["num", "id"] = Body("num", description="订单号字段类型"),
     payment_method: Optional[str] = Body(None, description="支付方式"),
     payment_amount: Optional[float] = Body(None, description="支付金额"),
     payment_time: Optional[str] = Body(
@@ -299,7 +299,7 @@ def update_applets_order_address_api(
 
 @applets_order_router.put("/complete_applets_order", summary="完成小程序订单")
 def complete_applets_order_api(
-    order: int = Body(..., description="订单id"),
+    order: int = Query(..., description="订单id"),
     field_type: Literal["num", "id"] = Query("num", description="订单号字段类型"),
 ):
     """
@@ -341,7 +341,7 @@ def complete_applets_order_api(
 
 @applets_order_router.delete("/delete_applets_order", summary="删除小程序订单")
 def delete_applets_order_api(
-    order: int = Body(..., description="订单id"),
+    order: int = Query(..., description="订单id"),
     field_type: Literal["num", "id"] = Query("num", description="订单号字段类型"),
 ):
     """

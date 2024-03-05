@@ -260,4 +260,6 @@ def runserver(workers):
         workers=workers,
         # log_level="critical",
         # reload=True
+        ssl_keyfile="./utils/api.newshineoil.com.key",
+        ssl_certfile="./utils/api.newshineoil.com_bundle.pem"
     )

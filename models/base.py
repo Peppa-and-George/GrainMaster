@@ -449,3 +449,58 @@ class AppletsOrderDetailSchema(AppletsOrderDetailBaseSchema):
     order: Optional[AppletsOrderBaseSchema] = Field(description="订单信息")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class InviteBaseSchema(BaseModel):
+    id: int = Field(description="邀请ID")
+    client_id: Optional[int] = Field(description="客户ID")
+    client_privilege_id: Optional[int] = Field(description="客户权益关系ID")
+    sponsor: Optional[str] = Field(description="邀请人")
+    invite_code: Optional[str] = Field(description="邀请码")
+    invite_time: Optional[datetime] = Field(description="邀请时间")
+    confirmed: Optional[bool] = Field(description="是否确认")
+    confirmed_time: Optional[datetime] = Field(description="确认时间")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "invite_time", "confirmed_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InviteSchema(InviteBaseSchema):
+    invited_customer: Optional[ClientSchema] = Field(description="受邀客户信息", default={})
+    client_privilege: Optional[ClientPrivilegeRelationSchema] = Field(
+        description="客户权益关系信息", default={}
+    )
+
+
+class ApplyBaseSchema(BaseModel):
+    id: int = Field(description="申请ID")
+    client_id: Optional[int] = Field(description="客户ID")
+    client_privilege_id: Optional[int] = Field(description="客户权益关系ID")
+    approve: Optional[str] = Field(description="审批人")
+    application_code: Optional[str] = Field(description="申请编号")
+    application_time: Optional[datetime] = Field(description="申请时间")
+    confirmed: Optional[bool] = Field(description="是否确认")
+    confirmed_time: Optional[datetime] = Field(description="确认时间")
+    agree: Optional[bool] = Field(description="是否同意")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer(
+        "create_time", "update_time", "application_time", "confirmed_time"
+    )
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApplySchema(ApplyBaseSchema):
+    applicant: Optional[ClientSchema] = Field(description="申请人信息", default={})
+    client_privilege: Optional[ClientPrivilegeRelationSchema] = Field(
+        description="客户权益关系信息", default={}
+    )

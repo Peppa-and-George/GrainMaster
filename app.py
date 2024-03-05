@@ -27,6 +27,8 @@ from routers.video import video_router
 from routers.banner import banner_router
 from routers.traceability import traceability_router
 from routers.applets_order import applets_order_router
+from routers.invite import invite_router
+from routers.apply import apply_router
 from journal import log
 from auth import (
     jwt,
@@ -163,6 +165,20 @@ app.include_router(
     applets_order_router,
     tags=["小程序订单"],
     prefix="/applets_order",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    invite_router,
+    tags=["权益邀约"],
+    prefix="/invite",
+    dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    apply_router,
+    tags=["权益申请"],
+    prefix="/apply",
     dependencies=[Depends(oauth2_scheme)],
 )
 

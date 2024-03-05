@@ -185,6 +185,12 @@ class Client(Base):
     applets_orders: Mapped[List["AppletsOrder"]] = relationship(
         "AppletsOrder", back_populates="client"
     )
+    invite_info: Mapped[List["Invite"]] = relationship(
+        "Invite", back_populates="invited_customer"
+    )
+    application_info: Mapped[List["Apply"]] = relationship(
+        "Apply", back_populates="applicant"
+    )
 
 
 class ClientPrivilege(Base):
@@ -216,6 +222,12 @@ class ClientPrivilege(Base):
     )
     usage: Mapped[List["PrivilegeUsage"]] = relationship(
         "PrivilegeUsage", back_populates="client_privilege"
+    )
+    invite_info: Mapped[List["Invite"]] = relationship(
+        "Invite", back_populates="client_privilege"
+    )
+    application_info: Mapped[List["Apply"]] = relationship(
+        "Apply", back_populates="client_privilege"
     )
 
 
@@ -874,4 +886,74 @@ class AppletsOrderDetail(Base):
     )
     product: Mapped["Product"] = relationship(
         "Product", back_populates="applets_order_details", foreign_keys=[product_id]
+    )
+
+
+class Invite(Base):
+    __tablename__ = "invite"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    client_id = Column(ForeignKey("client.id"), nullable=False, comment="受邀客户ID")
+    client_privilege_id = Column(
+        ForeignKey("client_privilege.id"), nullable=False, comment="客户权益"
+    )
+    sponsor = Column(String(50), comment="发起者姓名", name="sponsor")
+    invite_code = Column(
+        String(64), nullable=False, comment="邀请码", name="invite_code", unique=True
+    )
+    invite_time = Column(DateTime, comment="邀请时间", name="invite_time")
+    confirmed = Column(Boolean, comment="是否确认", name="confirmed", default=False)
+    confirmed_time = Column(DateTime, comment="确认时间", name="confirmed_time")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    invited_customer: Mapped["Client"] = relationship(
+        "Client", back_populates="invite_info", foreign_keys=[client_id]
+    )
+    client_privilege: Mapped["ClientPrivilege"] = relationship(
+        "ClientPrivilege",
+        back_populates="invite_info",
+        foreign_keys=[client_privilege_id],
+    )
+
+
+class Apply(Base):
+    __tablename__ = "apply"  # noqa 权益申请
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    client_id = Column(ForeignKey("client.id"), nullable=False, comment="客户")
+    client_privilege_id = Column(
+        ForeignKey("client_privilege.id"), nullable=False, comment="客户权益"
+    )
+    approve = Column(String(50), comment="审批人", name="approve")
+    application_code = Column(
+        String(64), nullable=False, comment="申请码", name="application_code", unique=True
+    )
+    application_time = Column(DateTime, comment="申请时间", name="application_time")
+    confirmed = Column(Boolean, comment="是否确认", name="confirmed", default=False)
+    agree = Column(Boolean, comment="是否同意", name="agree", default=None)
+    confirmed_time = Column(DateTime, comment="确认时间", name="confirmed_time")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    applicant: Mapped["Client"] = relationship(
+        "Client", back_populates="application_info", foreign_keys=[client_id]
+    )
+    client_privilege: Mapped["ClientPrivilege"] = relationship(
+        "ClientPrivilege",
+        back_populates="application_info",
+        foreign_keys=[client_privilege_id],
     )

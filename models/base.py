@@ -33,7 +33,7 @@ class ProductSchema(BaseModel):
     introduction: Optional[str] = Field(description="商品简介", default="")
     price: Optional[float] = Field(description="商品价格")
     unit: Optional[float] = Field(description="商品规格")
-    amount: Optional[int] = Field(description="商品数量")
+    amount: Optional[int] = Field(description="库存数量")
     icon: Optional[str] = Field(description="商品图片")
     synchronize: Optional[bool] = Field(description="是否同步", default=False)
     create_time: datetime = Field(description="创建时间")

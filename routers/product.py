@@ -10,6 +10,7 @@ from schema.database import SessionLocal
 
 from dependency.image import save_image, delete_image, save_upload_image
 from schema.tables import Product
+from schema.tables import AppletsOrder, AppletsOrderDetail
 
 product_router = APIRouter()
 
@@ -88,6 +89,76 @@ async def get_product_by_name_api(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@product_router.get("/get_applets_products_by_id", summary="获取小程序商品信息")
+async def get_applets_products_by_id_api(
+    product_id: int = Query(..., description="商品id"),
+):
+    sales_volume = 0
+    """
+    # 获取小程序商品信息
+    ## params
+    - **productName**: 商品名称
+    
+    ## response
+    - **id**: 商品ID
+    - **name**: 商品名称
+    - **introduction**: 商品介绍
+    - **price**: 价格
+    - **unit**: 规格
+    - **amount**: 库存
+    - **icon**: 商品图片名称
+    - **sales_volume**: 销量
+    """
+    with SessionLocal() as db:
+        product = (
+            db.query(Product)
+            .filter(
+                Product.id == product_id,
+                Product.synchronize == True,
+            )
+            .first()
+        )
+        if not product:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 1,
+                    "message": "查询失败, 该商品不存在",
+                },
+            )
+
+        # 统计销量
+        sales_volume = 0
+        order_details = (
+            db.query(AppletsOrderDetail)
+            .join(AppletsOrder, AppletsOrder.id == AppletsOrderDetail.order_id)
+            .join(Product, Product.id == AppletsOrderDetail.product_id)
+            .filter(
+                AppletsOrderDetail.product_id == product_id,
+                AppletsOrder.status != "待支付",
+            )
+        )
+        for item in order_details:
+            sales_volume += item.quantity
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "code": 0,
+                "message": "查询成功",
+                "data": {
+                    "id": product.id,
+                    "name": product.name,
+                    "introduction": product.introduction,
+                    "price": product.price,
+                    "unit": product.unit,
+                    "icon": product.icon,
+                    "amount": product.amount,
+                    "sales_volume": sales_volume,
+                },
+            },
+        )
 
 
 @product_router.get("/get_product_by_id", summary="根据id获取商品信息")

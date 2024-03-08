@@ -46,10 +46,10 @@ from schema.tables import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 
 app = FastAPI(title="backend", version="1.0.0")
-app.mount("/image", StaticFiles(directory=IMAGE_DIR), name="image")
-app.mount("/video", StaticFiles(directory=VIDEOS_DIR), name="video")
-app.mount("/report", StaticFiles(directory=REPORT_DIR), name="report")
-app.mount("/file", StaticFiles(directory=FILE_DIR), name="file")
+app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
+app.mount("/videos", StaticFiles(directory=VIDEOS_DIR), name="videos")
+app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
+app.mount("/files", StaticFiles(directory=FILE_DIR), name="files")
 app.include_router(
     user_router, tags=["系统管理"], prefix="/user", dependencies=[Depends(oauth2_scheme)]
 )
@@ -261,5 +261,5 @@ def runserver(workers):
         # log_level="critical",
         # reload=True
         ssl_keyfile="./utils/api.newshineoil.com.key",
-        ssl_certfile="./utils/api.newshineoil.com_bundle.pem"
+        ssl_certfile="./utils/api.newshineoil.com_bundle.pem",
     )

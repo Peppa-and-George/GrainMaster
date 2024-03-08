@@ -177,10 +177,12 @@ async def get_segment_file(
     with SessionLocal() as db:
         query = db.query(SegmentFile)
         if segment:
-            if segment_field_type == 'id':
+            if segment_field_type == "id":
                 query = query.filter(SegmentFile.segment_id == segment)
             else:
-                query = query.join(Segment, SegmentFile.segment_id == Segment.id).filter(Segment.name == segment)
+                query = query.join(
+                    Segment, SegmentFile.segment_id == Segment.id
+                ).filter(Segment.name == segment)
         if file_type != "all":
             query = query.filter(SegmentFile.type == file_type)
         response = page_with_order(

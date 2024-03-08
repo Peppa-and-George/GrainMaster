@@ -65,7 +65,7 @@ class LocationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlanSchema(BaseModel):
+class PlanBaseSchema(BaseModel):
     id: int = Field(description="计划ID")
     location_id: Optional[int] = Field(description="基地ID")
     create_people: Optional[str] = Field(description="创建人")
@@ -78,16 +78,15 @@ class PlanSchema(BaseModel):
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
-    location: LocationSchema = Field(description="基地信息")
-
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
-        if v:
-            return v.strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            return None
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlanSchema(PlanBaseSchema):
+    location: LocationSchema = Field(description="基地信息")
 
 
 class AddressSchema(BaseModel):
@@ -178,6 +177,7 @@ class ClientPrivilegeRelationSchema(BaseModel):
 class SegmentBaseSchema(BaseModel):
     id: int = Field(description="种植ID")
     name: Optional[str] = Field(description="种植名称")
+    completed: Optional[bool] = Field(description="是否完成")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
@@ -231,23 +231,51 @@ class OperationSchema(BaseModel):
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
 
-class TransportSchema(BaseModel):
+class TransportBaseSchema(BaseModel):
     id: int = Field(description="运输ID")
-    plan_id: Optional[int] = Field(description="种植ID")
-    operate_date: Optional[datetime] = Field(description="操作时间")
-    driver: Optional[str] = Field(description="运输人员")
-    unloading_place: Optional[str] = Field(description="卸车地点")
-    loading_place: Optional[str] = Field(description="装车地点")
-    status: Optional[str] = Field(description="状态")
+    plan_id: Optional[int] = Field(description="计划ID")
+    operate_time: Optional[datetime] = Field(description="操作时间")
     remark: Optional[str] = Field(description="备注")
-    create_time: datetime = Field(description="创建时间")
-    update_time: datetime = Field(description="更新时间")
+    status: Optional[str] = Field(description="状态")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
 
-    @field_serializer("create_time", "update_time", "operate_date")
+    @field_serializer("create_time", "update_time", "operate_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TransportSchema(TransportBaseSchema):
+    plan: PlanBaseSchema = Field(description="计划信息")
+    segments: List["TransportSegmentBaseSchema"] = Field(description="运输环节信息")
+    qualities: List["QualityBaseSchema"] = Field(description="质检报告信息")
+
+
+class TransportSegmentBaseSchema(BaseModel):
+    id: int = Field(description="运输种植ID")
+    transport_id: Optional[int] = Field(description="运输ID")
+    type: Optional[str] = Field(description="运输环节类型")
+    completed: Optional[bool] = Field(description="是否完成")
+    operator: Optional[str] = Field(description="操作人")
+    operate_time: Optional[datetime] = Field(description="操作时间")
+    operate_place: Optional[str] = Field(description="操作地点")
+    video_filename: Optional[str] = Field(description="视频文件名")
+    image_filename: Optional[str] = Field(description="图片文件名")
+    remarks: Optional[str] = Field(description="备注")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "operate_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TransportSegmentSchema(TransportSegmentBaseSchema):
+    transport: TransportBaseSchema = Field(description="运输信息")
 
 
 class WarehouseSchema(BaseModel):
@@ -348,7 +376,7 @@ class CameraSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class QualitySchema(BaseModel):
+class QualityBaseSchema(BaseModel):
     id: int = Field(description="质检报告ID")
     plan_id: Optional[int] = Field(description="计划ID")
     warehouse_id: Optional[int] = Field(description="仓储加工ID")
@@ -361,13 +389,15 @@ class QualitySchema(BaseModel):
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
 
-    plan: PlanSchema = Field(description="计划信息")
-
     @field_serializer("create_time", "update_time", "upload_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class QualitySchema(QualityBaseSchema):
+    plan: PlanBaseSchema = Field(description="计划信息")
 
 
 class BannerSchema(BaseModel):

@@ -503,6 +503,7 @@ class Segment(Base):
     __tablename__ = "segment"  # noqa 种植环节
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=False, comment="种植环节", name="name", unique=True)
+    completed = Column(Boolean, default=False, comment="是否完成", name="completed")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -554,12 +555,9 @@ class Transport(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
 
-    operate_date = Column(
-        DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
+    operate_time = Column(
+        DateTime, default=datetime.now, comment="计划操作日期", name="operate_time"
     )
-    loading_place = Column(String(50), comment="装车地点", name="loading_place")
-    unloading_place = Column(String(50), comment="卸车地点", name="unloading_place")
-    driver = Column(String(50), comment="运输人员", name="driver", default=None)
     remark = Column(Text, comment="备注", name="remark")
     status = Column(String(50), comment="状态", name="status", default="准备运输")
 
@@ -579,6 +577,37 @@ class Transport(Base):
     )
     qualities: Mapped[List["Quality"]] = relationship(
         "Quality", back_populates="transport"
+    )
+    segments: Mapped[List["TransportSegment"]] = relationship(
+        "TransportSegment", back_populates="transport"
+    )
+
+
+class TransportSegment(Base):
+    __tablename__ = "transport_segment"  # noqa 运输环节
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    transport_id = Column(ForeignKey("transport.id", ondelete="CASCADE"), comment="运输")
+    type = Column(String(50), nullable=False, comment="运输环节类型", name="name")
+    completed = Column(Boolean, default=False, comment="是否完成", name="completed")
+    operator = Column(String(50), comment="操作人", name="operator")
+    operate_time = Column(DateTime, comment="操作时间", name="operate_date")
+    operate_place = Column(String(50), comment="操作地点", name="operate_place")
+    video_filename = Column(String(255), comment="视频文件名", name="video_uri")
+    image_filename = Column(String(255), comment="图片文件名", name="image_uri")
+    remarks = Column(Text, comment="备注", name="remarks")
+
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    transport: Mapped["Transport"] = relationship(
+        "Transport", back_populates="segments", foreign_keys=[transport_id]
     )
 
 
@@ -681,7 +710,7 @@ class Quality(Base):
     name = Column(String(50), comment="报告名称", name="name")
     people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
-    report = Column(Text, comment="文件路径", name="reports")
+    report = Column(Text, comment="文件路径", name="report")
     upload_time = Column(DateTime, comment="上传时间", name="upload_time")
 
     create_time = Column(

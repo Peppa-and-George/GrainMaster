@@ -17,6 +17,18 @@ from dependency.videos import save_video, delete_video
 transport_router = APIRouter()
 
 
+# def update_status(transport_id: int):
+#     with SessionLocal() as db:
+#         transport_segment = db.query(TransportSegment).filter(
+#             TransportSegment.transport_id == transport_id, TransportSegment.type == "卸货"
+#         )
+#         if transport_segment.count() != 1:
+#             return JSONResponse(
+#                 status_code=status.HTTP_200_OK,
+#                 content={"code": 1, "message": "运输环节重复不存在"},
+#             )
+
+
 @transport_router.get("/get_transports", summary="获取原料运输信息")
 async def get_transports_api(
     transport_id: Optional[int] = Query(None, description="运输计划ID"),
@@ -106,7 +118,9 @@ async def get_transport_segment_api(
     """
     try:
         with SessionLocal() as db:
-            query = db.query(TransportSegment)
+            query = db.query(TransportSegment).join(
+                Transport, Transport.id == TransportSegment.transport_id
+            )
             if segment_id:
                 query = query.filter(TransportSegment.id == segment_id)
             if transport_id:
@@ -290,7 +304,7 @@ async def update_transport_segment_api(
         )
 
 
-@transport_router.put("/upload_file", summary="上传运输环节文件")
+@transport_router.post("/upload_file", summary="上传运输环节文件")
 async def upload_file_api(
     transport_segment_id: int = Form(..., description="运输环节ID"),
     file_type: Literal["image", "video"] = Form("image", description="文件类型"),

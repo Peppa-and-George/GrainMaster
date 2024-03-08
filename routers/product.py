@@ -430,7 +430,8 @@ async def delete_product_api(
                     },
                 )
             icon = product.icon
-            delete_image(icon)
+            if icon:
+                delete_image(icon)
             db.delete(product)
             db.commit()
             return JSONResponse(

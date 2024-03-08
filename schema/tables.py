@@ -10,7 +10,6 @@ from sqlalchemy import (
     Boolean,
     Text,
     Float,
-    PrimaryKeyConstraint,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped
@@ -191,6 +190,12 @@ class Client(Base):
     application_info: Mapped[List["Apply"]] = relationship(
         "Apply", back_populates="applicant"
     )
+    plant_plans: Mapped[List["PlantPlan"]] = relationship(
+        "PlantPlan", back_populates="operator"
+    )
+    messages: Mapped[List["Message"]] = relationship(
+        "Message", back_populates="receiver"
+    )
 
 
 class ClientPrivilege(Base):
@@ -362,8 +367,8 @@ class Plan(Base):
         foreign_keys=[location_id],
         back_populates="plans",
     )
-    segments: Mapped[List["PlanSegmentRelationship"]] = relationship(
-        "PlanSegmentRelationship", back_populates="plan"
+    plant_plans: Mapped[List["PlantPlan"]] = relationship(
+        "PlantPlan", back_populates="plan"
     )
     transports: Mapped[List["Transport"]] = relationship(
         "Transport", back_populates="plan"
@@ -464,19 +469,14 @@ class Express(Base):
     )
 
 
-class PlanSegmentRelationship(Base):
-    __tablename__ = "plan_segment"
-    plan_id = Column(
-        ForeignKey("plan.id", ondelete="CASCADE"), comment="计划", primary_key=True
-    )
-    segment_id = Column(
-        ForeignKey("segment.id", ondelete="CASCADE"), comment="种植环节", primary_key=True
-    )
-    operator = Column(String(50), comment="操作人员", name="operator")
+class PlantPlan(Base):
+    __tablename__ = "plant_plan"  # noqa 种植计划
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(ForeignKey("plan.id", ondelete="CASCADE"), comment="计划")
+    segment_id = Column(ForeignKey("segment.id", ondelete="CASCADE"), comment="种植环节")
+    operator_id = Column(ForeignKey("client.id"), comment="操作人", name="operator")
     operation_date = Column(DateTime, comment="计划操作日期", name="operation_date")
     remarks = Column(Text, comment="备注", name="remarks")
-    image_uri = Column(Text, comment="图片", name="image_uri")
-    video_uri = Column(Text, comment="视频", name="video_uri")
     status = Column(String(50), comment="状态", name="status", default="未开始")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -489,20 +489,18 @@ class PlanSegmentRelationship(Base):
         name="update_time",
     )
     plan: Mapped["Plan"] = relationship(
-        "Plan", back_populates="segments", foreign_keys=[plan_id]
+        "Plan", back_populates="plant_plans", foreign_keys=[plan_id]
     )
     segment: Mapped["Segment"] = relationship(
         "Segment", back_populates="plans", foreign_keys=[segment_id]
     )
-
-    __table_args__ = (
-        UniqueConstraint("plan_id", "segment_id", name="unique_plan"),
-        {},
+    operator: Mapped["Client"] = relationship(
+        "Client", back_populates="plant_plans", foreign_keys=[operator_id]
     )
 
 
 class Segment(Base):
-    __tablename__ = "segment"
+    __tablename__ = "segment"  # noqa 种植环节
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=False, comment="种植环节", name="name", unique=True)
 
@@ -520,13 +518,16 @@ class Segment(Base):
     operations: Mapped[List["PlantOperate"]] = relationship(
         "PlantOperate", back_populates="segment"
     )
-    plans: Mapped[List["PlanSegmentRelationship"]] = relationship(
-        "PlanSegmentRelationship", back_populates="segment"
+    plans: Mapped[List["PlantPlan"]] = relationship(
+        "PlantPlan", back_populates="segment"
+    )
+    files: Mapped[List["SegmentFile"]] = relationship(
+        "SegmentFile", back_populates="segment"
     )
 
 
 class PlantOperate(Base):
-    __tablename__ = "operate"
+    __tablename__ = "operate"  # noqa 种植操作
     id = Column(Integer, primary_key=True, autoincrement=True)
     segment_id = Column(ForeignKey("segment.id", ondelete="CASCADE"))
 
@@ -680,7 +681,7 @@ class Quality(Base):
     name = Column(String(50), comment="报告名称", name="name")
     people = Column(String(50), comment="上传人", name="people")
     status = Column(String(50), default="未上传", comment="上传状态", name="status")
-    report = Column(Text, comment="文件路径", name="report")
+    report = Column(Text, comment="文件路径", name="reports")
     upload_time = Column(DateTime, comment="上传时间", name="upload_time")
 
     create_time = Column(
@@ -956,4 +957,54 @@ class Apply(Base):
         "ClientPrivilege",
         back_populates="application_info",
         foreign_keys=[client_privilege_id],
+    )
+
+
+class Message(Base):
+    __tablename__ = "message"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(64), comment="标题", name="title")
+    content = Column(Text, comment="内容", name="content")
+    status = Column(Boolean, comment="是否已读", name="status", default=False)
+    sender = Column(String(16), comment="发送人", name="sender")
+    receiver_id = Column(ForeignKey("client.id"), comment="接收人", name="receiver")
+    type = Column(String(50), comment="消息类型", name="type")
+    tag = Column(Integer, comment="消息标签", name="tag")
+    details = Column(Text, comment="详情", name="details")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    receiver: Mapped["Client"] = relationship(
+        "Client", back_populates="messages", foreign_keys=[receiver_id]
+    )
+
+
+class SegmentFile(Base):
+    __tablename__ = "plant_segment_file"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(64), comment="文件原始名", name="original_name")
+    segment_id = Column(ForeignKey("segment.id"), comment="种植环节")
+    filename = Column(String(64), comment="文件名", name="filename")
+    type = Column(String(64), comment="文件类型", name="type")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    segment: Mapped["Segment"] = relationship(
+        "Segment", back_populates="files", foreign_keys=[segment_id]
     )

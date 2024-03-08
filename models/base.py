@@ -160,7 +160,7 @@ class ClientPrivilegeRelationSchema(BaseModel):
     used_amount: Optional[int] = Field(description="已使用数量")
     unused_amount: Optional[int] = Field(description="未使用数量")
     create_time: datetime = Field(description="创建时间")
-    update_time: datetime = Field(description="更新时间")
+    update_time: datetime = Field(deSegmentscription="更新时间")
 
     privilege: Optional[PrivilegeSchema] = Field(description="权益信息", default={})
     usage: Optional[List["PrivilegeUsageSchema"]] = Field(
@@ -175,13 +175,11 @@ class ClientPrivilegeRelationSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class SegmentSchema(BaseModel):
+class SegmentBaseSchema(BaseModel):
     id: int = Field(description="种植ID")
     name: Optional[str] = Field(description="种植名称")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
-
-    operations: List["OperationSchema"] = Field(description="操作信息")
 
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
@@ -190,27 +188,34 @@ class SegmentSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlanSegmentRelationshipSchema(BaseModel):
+class SegmentSchema(SegmentBaseSchema):
+    operations: List["OperationSchema"] = Field(description="操作信息")
+    files: List["SegmentFileBaseSchema"] = Field(description="文件信息")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PlantPlanBaseSchema(BaseModel):
     plan_id: int = Field(description="计划ID")
     segment_id: int = Field(description="种植ID")
-    operator: Optional[str] = Field(description="操作人")
+    operator_id: int = Field(description="操作人ID")
     operation_date: Optional[datetime] = Field(description="操作日期")
     remarks: Optional[str] = Field(description="备注")
-    image_uri: Optional[str] = Field(description="图片地址")
-    video_uri: Optional[str] = Field(description="视频地址")
     status: Optional[str] = Field(description="状态")
     create_time: datetime = Field(description="创建时间")
     update_time: datetime = Field(description="更新时间")
-
-    segment: SegmentSchema = Field(description="种植信息")
-    plan: PlanSchema = Field(description="计划信息")
-    usage: Optional[List["PrivilegeUsageSchema"]] = Field(description="用量信息")
 
     @field_serializer("create_time", "update_time", "operation_date")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlantPlanSchema(PlantPlanBaseSchema):
+    segment: SegmentSchema = Field(description="种植信息")
+    plan: PlanSchema = Field(description="计划信息")
+    operator: ClientSchema = Field(description="操作人信息")
 
 
 class OperationSchema(BaseModel):
@@ -504,3 +509,51 @@ class ApplySchema(ApplyBaseSchema):
     client_privilege: Optional[ClientPrivilegeRelationSchema] = Field(
         description="客户权益关系信息", default={}
     )
+
+
+class MessageBaseSchema(BaseModel):
+    id: str = Field(description="消息ID")
+    title: Optional[str] = Field(description="标题")
+    content: Optional[str] = Field(description="内容")
+    status: Optional[bool] = Field(description="是否已读")
+    sender: Optional[str] = Field(description="发送者")
+    receiver_id: Optional[int] = Field(description="接收者ID")
+    type: Optional[str] = Field(description="消息类型")
+    tag: Optional[int] = Field(description="消息标签")
+    details: Optional[str] = Field(description="详情")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MessageSchema(MessageBaseSchema):
+    receiver: Optional[ClientSchema] = Field(description="接收者信息", default={})
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SegmentFileBaseSchema(BaseModel):
+    id: int = Field(description="文件ID")
+    name: Optional[str] = Field(description="文件原始名称")
+    segment_id: Optional[int] = Field(description="种植ID")
+    filename: Optional[str] = Field(description="文件名称")
+    type: Optional[str] = Field(description="文件类型")
+    create_time: datetime = Field(description="创建时间")
+    update_time: datetime = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SegmentFileSchema(SegmentFileBaseSchema):
+    segment: Optional[SegmentBaseSchema] = Field(description="种植信息", default={})
+
+    model_config = ConfigDict(from_attributes=True)

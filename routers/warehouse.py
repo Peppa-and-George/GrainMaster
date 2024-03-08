@@ -308,10 +308,16 @@ async def add_warehouse(
             )
 
         # 验证加工数量
-        if amount > order_obj.total_amount:
+        completed_warehouse = (
+            db.query(Warehouse)
+            .filter(Warehouse.order_id == order_obj.id, Warehouse.status == "加工完成")
+            .all()
+        )
+        completed_amount = sum([i.amount for i in completed_warehouse])
+        if amount > order_obj.total_amount - completed_amount:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "加工数量大于订单总数量"},
+                content={"code": 1, "message": "加工数量大于订单剩余数量"},
             )
 
         # 验证产品

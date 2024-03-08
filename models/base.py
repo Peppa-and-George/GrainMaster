@@ -370,17 +370,19 @@ class OrderSchema(OrderBaseSchema):
 class LogisticsPlanBaseSchema(BaseModel):
     id: int = Field(description="物流计划ID")
     plan_id: Optional[int] = Field(description="计划ID")
-    address_id: Optional[int] = Field(description="地址ID")
-    operate_date: Optional[datetime] = Field(description="计划操作日期")
-    operate_people: Optional[str] = Field(description="操作人员")
     order_id: Optional[int] = Field(description="订单ID")
-    order_number: Optional[str] = Field(description="订单编号")
+    address_id: Optional[int] = Field(description="地址ID")
+    client_id: Optional[int] = Field(description="客户ID")
     amount: Optional[int] = Field(description="发货数量")
-    notices: Optional[str] = Field(description="备注")
+    express_number: Optional[str] = Field(description="快递单号")
+    express_company: Optional[str] = Field(description="快递公司")
+    express_status: Optional[str] = Field(description="快递状态")
+    operate_time: Optional[datetime] = Field(description="计划操作时间")
+    remarks: Optional[str] = Field(description="备注")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")
 
-    @field_serializer("create_time", "update_time", "operate_date")
+    @field_serializer("create_time", "update_time", "operate_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
 
@@ -389,6 +391,9 @@ class LogisticsPlanBaseSchema(BaseModel):
 
 class LogisticsPlanSchema(LogisticsPlanBaseSchema):
     address: Optional[AddressBaseSchema] = Field(description="地址信息", default={})
+    order: Optional[OrderBaseSchema] = Field(description="订单信息", default={})
+    plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
+    client: Optional[ClientBaseSchema] = Field(description="客户信息", default={})
 
 
 class CameraBaseSchema(BaseModel):

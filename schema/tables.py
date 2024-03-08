@@ -199,6 +199,9 @@ class Client(Base):
     messages: Mapped[List["Message"]] = relationship(
         "Message", back_populates="receiver"
     )
+    logistics_plans: Mapped[List["LogisticsPlan"]] = relationship(
+        "LogisticsPlan", back_populates="client"
+    )
 
 
 class ClientPrivilege(Base):
@@ -691,16 +694,14 @@ class LogisticsPlan(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
     order_id = Column(ForeignKey("order.id"))
-    order_number = Column(String(64), comment="订单编号", name="order_number")
     address_id = Column(ForeignKey("address.id"))
-    status = Column(String(50), comment="状态", name="status", default="未开始")
+    client_id = Column(ForeignKey("client.id"))
     amount: int = Column(Integer, comment="发货数量", name="amount")
-    operate_date = Column(
-        DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
-    )
-    operate_people = Column(String(50), comment="操作人员", name="operate_people")
-    notices = Column(Text, comment="备注", name="notices")
-
+    express_number = Column(String(64), comment="物流单号", name="express_number")
+    express_company = Column(String(32), comment="物流公司", name="express_company")
+    express_status = Column(String(16), comment="物流状态", name="express_status")
+    operate_time = Column(DateTime, comment="计划操作时间", name="operate_time")
+    remarks = Column(Text, comment="备注", name="remarks")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
@@ -719,6 +720,9 @@ class LogisticsPlan(Base):
     )
     address: Mapped["Address"] = relationship(
         "Address", back_populates="logistics_plans", foreign_keys=[address_id]
+    )
+    client: Mapped["Client"] = relationship(
+        "Client", back_populates="logistics_plans", foreign_keys=[client_id]
     )
 
 

@@ -1,4 +1,5 @@
 # 物流计划
+import json
 from datetime import datetime
 from typing import Literal, Union, Optional
 
@@ -6,9 +7,10 @@ from fastapi import APIRouter, Query, status, Body, HTTPException
 from fastapi.responses import JSONResponse
 
 from schema.tables import LogisticsPlan, Plan, Location, Order, Address, Client
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
 from models.base import LogisticsPlanSchema
+from routers.message import add_message
 
 logistics_router = APIRouter()
 
@@ -66,17 +68,18 @@ async def get_logistics(
         )
 
 
+# 已完成
 @logistics_router.post("/add_logistics", summary="添加物流计划")
 async def add_logistics(
     order: Union[int, str] = Body(..., description="订单标识"),
     order_field_type: Literal["id", "num"] = Body("id", description="订单标识类型"),
     amount: int = Body(..., description="发货数量"),
     address_id: int = Body(..., description="地址id"),
-    operate_date: str = Body(
-        ..., description="计划操作日期", examples=["2021-01-01 00:00:00"]
+    operate_time: str = Body(
+        ..., description="计划操作时间", examples=["2021-01-01 00:00:00"]
     ),
-    operate_people: str = Body(..., description="计划操作人"),
-    notices: str = Body(..., description="备注"),
+    remarks: str = Body(..., description="备注"),
+    notify: bool = Body(False, description="是否通知"),
 ):
     """
     # 添加物流计划
@@ -85,15 +88,22 @@ async def add_logistics(
     - **order_number**: 订单编号, 可选
     - **order_id**: 订单id, 可选
     - **address_id**: 地址id
-    - **operate_date**: 计划操作日期
+    - **operate_time**: 计划操作日期
     - **operate_people**: 计划操作人
-    - **notices**: 备注
+    - **remarks**: 备注
+    - **notify**: 是否通知
     """
     with SessionLocal() as db:
         if order_field_type == "id":
             order = db.query(Order).filter(Order.id == order).first()
         else:
             order = db.query(Order).filter(Order.order_number == order).first()
+
+        if not order:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "订单不存在"},
+            )
 
         # 验证地址是否存在
         address = (
@@ -106,31 +116,45 @@ async def add_logistics(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "地址不存在或者不属于该客户"},
             )
-        if not order:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "订单不存在"},
-            )
+
         # 验证发货数量
-        if amount > order.total_amount:
+        plans = (
+            db.query(LogisticsPlan)
+            .filter(
+                LogisticsPlan.order_id == order.id,
+                LogisticsPlan.express_status != "待发货",
+            )
+            .all()
+        )
+        completed_amount = sum([plan.amount for plan in plans])
+        if amount > order.total_amount - completed_amount:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "发货数量不能大于订单数量"},
+                content={"code": 1, "message": "发货数量不能大于剩余数量"},
             )
 
         logistics = LogisticsPlan(
-            order_id=order.id,
-            order_number=order.order_number,
-            address_id=address_id,
-            plan_id=order.plan_id,
             amount=amount,
-            operate_date=datetime.strptime(operate_date, "%Y-%m-%d %H:%M:%S"),
-            operate_people=operate_people,
-            notices=notices,
+            operate_time=datetime.strptime(operate_time, "%Y-%m-%d %H:%M:%S"),
+            remarks=remarks,
+            express_status="待发货",
         )
         logistics.order = order
+        logistics.address = address
+        logistics.plan = order.plan
+        logistics.client = order.client
         db.add(logistics)
         db.commit()
+        if notify:
+            add_message(
+                receiver_id=order.client_id,
+                title="新增物流计划通知",
+                content=f"您有一个新的物流计划, 计划操作时间: {operate_time}, 备注: {remarks}",
+                sender="系统",
+                message_type="新增物流计划",
+                tag=4,
+                details=json.dumps(transform_schema(LogisticsPlanSchema, logistics)),
+            )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"code": 0, "message": "添加成功"},

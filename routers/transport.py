@@ -50,6 +50,11 @@ def query_segment(
 def update_transport_status(transport_id: int):
     with SessionLocal() as db:
         transport = db.query(Transport).filter(Transport.id == transport_id).first()
+        if not transport:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "运输信息不存在"},
+            )
         segment = query_segment(transport_id, "卸货")
         if segment.completed:
             transport.status = "运输完成"
@@ -305,8 +310,8 @@ async def update_transport_segment_api(
                 transport_segment.remarks = remarks
             if complete is not None:
                 transport_segment.completed = complete
-                update_transport_status(transport_segment.transport_id)
             db.commit()
+            update_transport_status(transport_segment.transport_id)
             if notify:
                 orders = (
                     db.query(Order.client_id)

@@ -33,6 +33,73 @@ from dependency.videos import save_video, delete_video
 warehouse_router = APIRouter()
 
 
+def query_segment(
+    warehouse_id: int, segment_type: Literal["投料", "压榨", "精炼", "分装", "入库"]
+) -> ProcessingSegment:
+    with SessionLocal() as db:
+        segment = db.query(ProcessingSegment).filter(
+            ProcessingSegment.warehouse_id == warehouse_id,
+            ProcessingSegment.type == segment_type,
+        )
+        if segment.count() == 0:
+            raise HTTPException(
+                status_code=status.HTTP_200_OK,
+                detail=f"加工环节{segment_type}不存在, 仓储加工计划ID: {warehouse_id}",
+            )
+        elif segment.count() > 1:
+            raise HTTPException(
+                status_code=status.HTTP_200_OK,
+                detail=f"加工环节{segment_type}重复, 仓储加工计划ID: {warehouse_id}",
+            )
+        return segment.first()
+
+
+def update_status(warehouse_id: int):
+    with SessionLocal() as db:
+        warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
+        if not warehouse:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "仓库不存在"},
+            )
+        segment = query_segment(warehouse_id, "入库")
+        if segment.completed:
+            warehouse.status = "加工完成"
+            db.commit()
+            return
+        for item in ["投料", "压榨", "精炼", "分装"]:
+            segment = query_segment(warehouse_id, item)
+            if segment.completed:
+                warehouse.status = "加工中"
+                db.commit()
+                return
+        warehouse.status = "准备加工"
+
+
+@warehouse_router.get("/get_total_amount_by_order", summary="通过订单获取订单加工数量")
+async def get_total_amount(
+    order: Union[int, str] = Query(..., description="订单ID或者订单编号"),
+    order_field_type: Literal["id", "num"] = Query("id", description="订单字段类型"),
+):
+    """
+    # 获取订单加工数量
+    ## params
+    - **order**: 订单ID或者订单编号, int | str, 必选
+    - **order_field_type**: 订单字段类型, 可选, 默认id, 可选值：id | num
+    # response
+    - **total_amount**: 总数量
+    """
+    with SessionLocal() as db:
+        if order_field_type == "id":
+            order_obj = db.query(Order).filter(Order.id == order).first()
+        else:
+            order_obj = db.query(Order).filter(Order.order_number == order).first()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"total_amount": order_obj.total_amount},
+        )
+
+
 @warehouse_router.get("/get_amount_info_by_order", summary="通过订单获取仓储加工数量信息")
 async def get_amount_info_by_order(
     order: Union[int, str] = Query(..., description="订单ID或者订单编号"),
@@ -43,12 +110,22 @@ async def get_amount_info_by_order(
     ## params
     - **order**: 订单ID或者订单编号, int | str, 必选
     - **order_field_type**: 订单字段类型, 可选, 默认id, 可选值：id | num
+    # response
+    - **total_amount**: 总数量
+    - **processed_amount**: 已加工数量
+    - **unprocessed_amount**: 未加工数量
     """
     with SessionLocal() as db:
         if order_field_type == "id":
             order_obj = db.query(Order).filter(Order.id == order).first()
         else:
             order_obj = db.query(Order).filter(Order.order_number == order).first()
+
+        if not order_obj:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "订单不存在"},
+            )
         total_amount = order_obj.total_amount
         warehouse = (
             db.query(Warehouse)
@@ -56,6 +133,14 @@ async def get_amount_info_by_order(
             .all()
         )
         processed_amount = sum([i.amount for i in warehouse])
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "total_amount": total_amount,
+                "processed_amount": processed_amount,
+                "unprocessed_amount": total_amount - processed_amount,
+            },
+        )
 
 
 @warehouse_router.get("/get_warehouse", summary="获取仓储加工计划信息")
@@ -220,6 +305,13 @@ async def add_warehouse(
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "订单不存在"},
+            )
+
+        # 验证加工数量
+        if amount > order_obj.total_amount:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "加工数量大于订单总数量"},
             )
 
         # 验证产品
@@ -465,6 +557,7 @@ async def update_processing_segment(
                 processing_segment.operator = operator
             if completed is not None:
                 processing_segment.completed = completed
+
             if operate_time:
                 processing_segment.operate_time = datetime.strptime(
                     operate_time, "%Y-%m-%d %H:%M:%S"
@@ -472,6 +565,8 @@ async def update_processing_segment(
             if remarks:
                 processing_segment.remarks = remarks
             db.commit()
+            if completed:
+                update_status(processing_segment.warehouse_id)
             if notify:
                 # 发送消息通知
                 add_message(
@@ -501,7 +596,7 @@ async def upload_file(
     processing_segment_id: int = Form(..., description="加工环节ID"),
     file_type: Literal["image", "video"] = Form("image", description="文件类型"),
     file: UploadFile = File(..., description="文件"),
-    notify: bool = Query(False, description="是否通知客户"),
+    notify: bool = Form(False, description="是否通知客户"),
 ):
     """
     # 上传文件
@@ -532,9 +627,8 @@ async def upload_file(
                     delete_video(processing_segment.video_filename)
                 processing_segment.video_filename = save_video(file)
             processing_segment.completed = True
-            if processing_segment.type == "入库":
-                processing_segment.warehouse.status = "加工完成"
             db.commit()
+            update_status(processing_segment.warehouse_id)
             if notify:
                 # 发送消息通知
                 add_message(
@@ -548,6 +642,10 @@ async def upload_file(
                         transform_schema(ProcessingSegmentSchema, processing_segment)
                     ),
                 )
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 0, "message": "上传成功"},
+            )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -600,9 +698,8 @@ async def delete_file(
                 and processing_segment.image_filename is None
             ):
                 processing_segment.completed = False
-                if processing_segment.type == "入库":
-                    processing_segment.warehouse.status = "加工中"
             db.commit()
+            update_status(processing_segment.warehouse_id)
             if notify:
                 # 发送消息通知
                 add_message(

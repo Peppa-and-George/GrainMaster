@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from fastapi.responses import JSONResponse
 from fastapi import status, Depends, Body
@@ -7,11 +7,46 @@ from fastapi.exceptions import HTTPException
 from fastapi import APIRouter, Query
 from schema.database import SessionLocal
 from schema.common import page_with_order
-from schema.tables import Plan, Location, Quality, Traceability
+from schema.tables import Plan, Location, Quality, Traceability, Order, Client
 from models.base import PlanSchema
 import uuid
 
 plan_router = APIRouter()
+
+
+@plan_router.get("/get_plans_by_client", summary="获取客户对应的计划信息")
+async def get_plans_by_client(
+    client: Union[int, str] = Query(..., description="客户ID"),
+    client_field_type: Literal["id", "name"] = Query("id", description="客户字段类型"),
+    order_field: str = Query("create_time", description="排序字段"),
+    order: Literal["asc", "desc"] = Query("desc", description="排序类型"),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
+):
+    try:
+        with SessionLocal() as db:
+            query = (
+                db.query(Plan)
+                .join(Order, Plan.id == Order.plan_id)
+                .join(Client, Order.client_id == Client.id)
+            )
+            if client_field_type == "id":
+                query = query.filter(Client.id == client)
+            else:
+                query = query.filter(Client.name == client)
+            data = page_with_order(
+                schema=PlanSchema,
+                query=query,
+                page=page,
+                page_size=page_size,
+                order_field=order_field,
+                order=order,
+            )
+            return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @plan_router.get("/get_plans", summary="批量获取计划信息")

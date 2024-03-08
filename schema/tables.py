@@ -25,7 +25,10 @@ class User(Base):
     phone_number = Column(String, nullable=False, comment="手机号", name="phone_number")
     hashed_passwd = Column(String, nullable=False, comment="密码", name="hashed_passwd")
 
-    create_time = Column(DateTime, default=datetime.now)
+    create_time = Column(
+        DateTime,
+        default=datetime.now,
+    )
     update_time = Column(DateTime, onupdate=datetime.now, default=datetime.now)
 
 
@@ -335,7 +338,7 @@ class Location(Base):
 
 
 class Plan(Base):
-    __tablename__ = "plan"
+    __tablename__ = "plan"  # noqa
     id = Column(Integer, primary_key=True, autoincrement=True)
     location_id = Column(
         ForeignKey("location.id", ondelete="CASCADE"),
@@ -612,28 +615,17 @@ class TransportSegment(Base):
 
 
 class Warehouse(Base):
-    __tablename__ = "warehouse"
+    __tablename__ = "warehouse"  # noqa 仓储加工
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     plan_id = Column(ForeignKey("plan.id"))
     product_id = Column(ForeignKey("product.id"))
     order_id = Column(ForeignKey("order.id"))
-    amount = Column(Integer, comment="数量", name="amount")
+    amount = Column(Integer, comment="加工数量", name="amount")
     status = Column(String(50), comment="状态", name="status", default="准备加工")
-
-    operate_date = Column(
-        DateTime, default=datetime.now, comment="计划操作日期", name="operate_date"
+    operate_time = Column(
+        DateTime, default=datetime.now, comment="计划操作日期", name="operate_time"
     )
-    feeding_place = Column(String(50), comment="投料口转运", name="feeding_place")
-    feeding_warehouse = Column(String(50), comment="投料仓转运地点", name="feeding_warehouse")
-    feeding = Column(String(50), comment="投料", name="feeding")
-    press = Column(String(50), comment="压榨", name="press")
-    refine = Column(String(50), comment="精炼", name="refine")
-    sorting = Column(String(50), comment="分装", name="sorting")
-    warehousing = Column(String(50), comment="入库", name="Warehousing")
-    product_warehousing = Column(
-        String(50), comment="成品入库地点", name="product_warehousing"
-    )
-    notices = Column(Text, comment="备注", name="notices")
+    remarks = Column(Text, comment="备注", name="remarks")
 
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
@@ -657,6 +649,40 @@ class Warehouse(Base):
     )
     qualities: Mapped[List["Quality"]] = relationship(
         "Quality", back_populates="warehouse"
+    )
+    processing_segments: Mapped[List["ProcessingSegment"]] = relationship(
+        "ProcessingSegment", back_populates="warehouse"
+    )
+
+
+class ProcessingSegment(Base):
+    __tablename__ = "processing_segment"  # noqa 加工环节
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    warehouse_id = Column(
+        ForeignKey("warehouse.id", ondelete="CASCADE"), comment="加工计划ID"
+    )
+    type = Column(String(50), nullable=False, comment="加工环节类型", name="name")
+    completed = Column(Boolean, default=False, comment="是否完成", name="completed")
+    operator = Column(String(50), comment="操作人", name="operator")
+    operate_time = Column(DateTime, comment="操作时间", name="operate_date")
+    video_filename = Column(String(255), comment="视频文件名", name="video_uri")
+    image_filename = Column(String(255), comment="图片文件名", name="image_uri")
+    remarks = Column(Text, comment="备注", name="remarks")
+
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    warehouse: Mapped["Warehouse"] = relationship(
+        "Warehouse",
+        back_populates="processing_segments",
+        foreign_keys=[warehouse_id],
     )
 
 

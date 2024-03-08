@@ -269,7 +269,7 @@ async def add_plant_plan(
         )
 
 
-@plant_router.post("/add_plant_segment", summary="添加种植环节")
+@plant_router.post("/add_segment", summary="添加种植环节")
 async def add_segment(
     name: str = Body(..., title="环节名称"),
     operate_steps: Optional[List[Dict]] = Body(

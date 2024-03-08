@@ -3,7 +3,16 @@ import json
 from datetime import datetime
 from typing import Literal, Optional, Union
 
-from fastapi import APIRouter, Query, status, Body, Form, UploadFile, File
+from fastapi import (
+    APIRouter,
+    Query,
+    status,
+    Body,
+    Form,
+    UploadFile,
+    File,
+    HTTPException,
+)
 from fastapi.responses import JSONResponse
 
 from routers.message import add_message
@@ -17,16 +26,43 @@ from dependency.videos import save_video, delete_video
 transport_router = APIRouter()
 
 
-# def update_status(transport_id: int):
-#     with SessionLocal() as db:
-#         transport_segment = db.query(TransportSegment).filter(
-#             TransportSegment.transport_id == transport_id, TransportSegment.type == "卸货"
-#         )
-#         if transport_segment.count() != 1:
-#             return JSONResponse(
-#                 status_code=status.HTTP_200_OK,
-#                 content={"code": 1, "message": "运输环节重复不存在"},
-#             )
+def query_segment(
+    transport_id: int, transport_segment_type: Literal["原料", "装车", "运输", "卸货"]
+) -> TransportSegment:
+    with SessionLocal() as db:
+        transport_segment = db.query(TransportSegment).filter(
+            TransportSegment.transport_id == transport_id,
+            TransportSegment.type == transport_segment_type,
+        )
+        if transport_segment.count() > 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"原料运输计划对应的运输环节重复，计划ID: {transport_id}， 环节类型: {transport_segment_type}",
+            )
+        elif transport_segment.count() == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"原料运输计划对应的运输环节缺失，计划ID: {transport_id}， 环节类型: {transport_segment_type}",
+            )
+        return transport_segment.first()
+
+
+def update_transport_status(transport_id: int):
+    with SessionLocal() as db:
+        transport = db.query(Transport).filter(Transport.id == transport_id).first()
+        segment = query_segment(transport_id, "卸货")
+        if segment.completed:
+            transport.status = "运输完成"
+            db.commit()
+            return
+
+        segment = query_segment(transport_id, "运输")
+        if segment.completed:
+            transport.status = "运输中"
+            db.commit()
+            return
+
+        transport.status = "准备运输"
 
 
 @transport_router.get("/get_transports", summary="获取原料运输信息")
@@ -268,7 +304,8 @@ async def update_transport_segment_api(
             if remarks:
                 transport_segment.remarks = remarks
             if complete is not None:
-                transport_segment.complete = complete
+                transport_segment.completed = complete
+                update_transport_status(transport_segment.transport_id)
             db.commit()
             if notify:
                 orders = (
@@ -363,6 +400,9 @@ async def upload_file_api(
                             transform_schema(TransportSegmentSchema, transport_segment)
                         ),
                     )
+            # 更新运输状态
+            update_transport_status(transport_segment.transport_id)
+
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"code": 0, "message": "上传成功"},
@@ -443,6 +483,7 @@ async def delete_file_api(
             ):
                 transport_segment.completed = False
             db.commit()
+            update_transport_status(transport_segment.transport_id)
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"code": 0, "message": "删除成功"},

@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from fastapi import UploadFile, HTTPException
+from fastapi import UploadFile
 
 from config import FILE_DIR
 

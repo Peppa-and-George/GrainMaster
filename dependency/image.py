@@ -4,7 +4,7 @@ from base64 import b64decode
 
 from fastapi import HTTPException, UploadFile
 
-from config import PRODUCT_DIR
+from config import IMAGES_DER
 
 
 def save_image(icon: str) -> str:
@@ -26,7 +26,7 @@ def save_image(icon: str) -> str:
     else:
         filename = f"{image_hash}.jpeg"
     # 保存图片
-    with open(f"{PRODUCT_DIR}/{filename}", "wb") as f:
+    with open(f"{IMAGES_DER}/{filename}", "wb") as f:
         f.write(image_data)
     return filename
 
@@ -37,10 +37,10 @@ def delete_image(icon: str) -> None:
     :param icon: 图片名称
     """
     # 查询商品图片
-    if not os.path.exists(f"{PRODUCT_DIR}/{icon}"):
+    if not os.path.exists(f"{IMAGES_DER}/{icon}"):
         raise HTTPException(status_code=400, detail="图片不存在")
     try:
-        os.remove(f"{PRODUCT_DIR}/{icon}")
+        os.remove(f"{IMAGES_DER}/{icon}")
     except Exception as e:
         raise HTTPException(status_code=500, detail="删除产品图片失败, 错误信息: " + str(e))
 
@@ -53,6 +53,6 @@ def save_upload_image(image: UploadFile):
     """
     image_hash = uuid.uuid4().hex
     filename = f"{image_hash}{os.path.splitext(image.filename)[-1]}"
-    with open(f"{PRODUCT_DIR}/{filename}", "wb") as f:
+    with open(f"{IMAGES_DER}/{filename}", "wb") as f:
         f.write(image.file.read())
     return filename

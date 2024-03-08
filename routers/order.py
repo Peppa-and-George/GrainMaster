@@ -164,21 +164,22 @@ async def add_order(
     plan_id: int = Body(..., description="计划id"),
     client_id: Optional[int] = Body(None, description="客户id"),
     product_id: int = Body(..., description="产品id"),
-    customized_area: Optional[float] = Body(None, description="定制面积"),
-    total_amount: Optional[int] = Body(None, description="总数量"),
+    customized_area: float = Body(..., description="定制面积"),
     camera_id: Optional[int] = Body(None, description="相机id"),
 ):
     """
     # 添加订单
-    - **plan_id**: 计划id
-    - **client_id**: 客户id
-    - **product_id**: 产品id
-    - **customized_area**: 定制面积
-    - **total_number**: 总数量
-    - **camera_id**: 相机id
+    - **plan_id**: 计划id, int, required
+    - **client_id**: 客户id, int, required
+    - **product_id**: 产品id, int, required
+    - **customized_area**: 定制面积, float, required, 0.5的倍数
+    - **camera_id**: 相机id, int, required
     """
     # 验证参数
     with SessionLocal() as db:
+        units = int(customized_area * 10 // 5)
+        customized_area = units * 0.5
+        total_amount = units // 2 * 17 + (units % 2) * 8
         plan = db.query(Plan).filter(Plan.id == plan_id).first()
         if not plan:
             return JSONResponse(

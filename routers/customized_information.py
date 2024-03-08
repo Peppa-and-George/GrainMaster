@@ -44,7 +44,7 @@ async def create_customized_information(
     创建定制信息
     # Form参数
     - **introduction**: 简介, str, 可选
-    - **icon**: 工艺图片, file, 可选
+    - **icon**: 工艺图片, files, 可选
     """
     filename = save_upload_image(icon) if icon else None
     with SessionLocal() as session:
@@ -69,7 +69,7 @@ async def update_customized_information(
     # Form参数
     - **id**: 定制信息id, int, 必选
     - **introduction**: 简介, str, 可选
-    - **icon**: 工艺图片, file, 可选
+    - **icon**: 工艺图片, files, 可选
     """
     with SessionLocal() as session:
         customized_information = (

@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from sqlalchemy import func
 from schema.tables import (
     Client,
-    PlanSegmentRelationship,
+    PlantPlan,
     Warehouse,
     Transport,
     LogisticsPlan,
@@ -59,7 +59,7 @@ async def statistic_plan_info_api():
     # 统计计划信息
     """
     with SessionLocal() as db:
-        plant_total = db.query(func.count(PlanSegmentRelationship.plan_id)).scalar()
+        plant_total = db.query(func.count(PlantPlan.plan_id)).scalar()
         warehouse_total = db.query(func.count(Warehouse.id)).scalar()
         transport_total = db.query(func.count(Transport.id)).scalar()
         Logistics_total = db.query(func.count(LogisticsPlan.id)).scalar()

@@ -86,7 +86,7 @@ async def create_quality(
     # 创建质报告
     - **warehouse_id**: 仓库id, 必填
     - **report_name**: 质检报告名称, str, 可选
-    - **file**: 质检报告, 可选
+    - **files**: 质检报告, 可选
     - **report_type**: 报告类型, 必填 范围：仓储加工|原料运输
     """
     filename = save_report(file) if file else None
@@ -123,7 +123,7 @@ async def update_quality(
     # 更新质报告
     - **report_id**: 质检报告id
     - **report_name**: 质检报告名称, 可选
-    - **file**: 质检报告, 可选, 文件类型
+    - **files**: 质检报告, 可选, 文件类型
     - **report_type**: 报告类型, 可选 范围：仓储加工|原料运输
     """
     with SessionLocal() as db:

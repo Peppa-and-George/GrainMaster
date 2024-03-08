@@ -44,5 +44,4 @@ def add_message(
         message.receiver = receiver
         db.add(message)
         db.commit()
-        # TODO: 推送消息
         return {"code": 0, "message": "消息添加成功"}

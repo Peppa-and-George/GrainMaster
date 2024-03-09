@@ -76,7 +76,7 @@ def update_status(warehouse_id: int):
         warehouse.status = "准备加工"
 
 
-@warehouse_router.get("/get_total_amount_by_order", summary="通过订单获取订单加工数量")
+@warehouse_router.get("/get_total_amount_by_order", summary="获取订单数量")
 async def get_total_amount(
     order: Union[int, str] = Query(..., description="订单ID或者订单编号"),
     order_field_type: Literal["id", "num"] = Query("id", description="订单字段类型"),
@@ -113,7 +113,8 @@ async def get_amount_info_by_order(
     # response
     - **total_amount**: 总数量
     - **processed_amount**: 已加工数量
-    - **unprocessed_amount**: 未加工数量
+    - **processing_amount**: 加工中数量
+    - **available_amount**: 可加工数量
     """
     with SessionLocal() as db:
         if order_field_type == "id":
@@ -133,12 +134,18 @@ async def get_amount_info_by_order(
             .all()
         )
         processed_amount = sum([i.amount for i in warehouse])
+        all_warehouse = (
+            db.query(Warehouse).filter(Warehouse.order_id == order_obj.id).all()
+        )
+        processing_amount = sum([i.amount for i in all_warehouse]) - processed_amount
+        available_amount = total_amount - processed_amount - processing_amount
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "total_amount": total_amount,
                 "processed_amount": processed_amount,
-                "unprocessed_amount": total_amount - processed_amount,
+                "processing_amount": processing_amount,
+                "available_amount": available_amount,
             },
         )
 

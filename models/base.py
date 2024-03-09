@@ -1,3 +1,5 @@
+import json
+
 from pydantic import BaseModel, Field, field_serializer, ConfigDict
 from typing import Any, List, Optional
 from datetime import datetime
@@ -595,7 +597,7 @@ class ApplySchema(ApplyBaseSchema):
 
 
 class MessageBaseSchema(BaseModel):
-    id: str = Field(description="消息ID")
+    id: int = Field(description="消息ID")
     title: Optional[str] = Field(description="标题")
     content: Optional[str] = Field(description="内容")
     status: Optional[bool] = Field(description="是否已读")
@@ -610,6 +612,10 @@ class MessageBaseSchema(BaseModel):
     @field_serializer("create_time", "update_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    @field_serializer("details")
+    def format_details(self, v: Any) -> Any:
+        return json.loads(v) if v else {}
 
     model_config = ConfigDict(from_attributes=True)
 

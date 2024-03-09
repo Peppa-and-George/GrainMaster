@@ -38,14 +38,12 @@ def page_with_order(
     :param order_field: 排序字段, 默认id
     :param order: 排序方式, 默认asc
     """
-    query = query_with_page_and_order(query, page, page_size, order_field, order)
     if distinct_field is None:
         total = query.count()
     else:
         total = query.distinct(distinct_field).count()
-    total_page = (
-        total // page_size + 1 if total % page_size != 0 else total // page_size
-    )
+    query = query_with_page_and_order(query, page, page_size, order_field, order)
+    total_page = (total + page_size - 1) // page_size
     data = query.all()
     data = transform_schema(schema, data)
     return {

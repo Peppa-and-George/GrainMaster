@@ -1140,3 +1140,24 @@ class SegmentFile(Base):
     segment: Mapped["Segment"] = relationship(
         "Segment", back_populates="files", foreign_keys=[segment_id]
     )
+
+
+class TodoList(Base):
+    __tablename__ = "todo_list"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(64), comment="标题", name="title")
+    content = Column(Text, comment="内容", name="content")
+    status = Column(Boolean, comment="是否完成", name="status", default=False)
+    complete_time = Column(DateTime, comment="完成时间", name="complete_time")
+    sender = Column(String(16), comment="发送人", name="sender")
+    read = Column(Boolean, comment="是否已读", name="read", default=False)
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )

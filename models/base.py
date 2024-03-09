@@ -730,3 +730,25 @@ class ProcessingSegmentBaseSchema(BaseModel):
 
 class ProcessingSegmentSchema(ProcessingSegmentBaseSchema):
     warehouse: Optional[WarehouseBaseSchema] = Field(description="仓储加工信息", default={})
+
+
+class TodoListBaseSchema(BaseModel):
+    id: int = Field(description="待办事项ID")
+    title: Optional[str] = Field(description="待办事项标题")
+    content: Optional[str] = Field(description="待办事项内容")
+    status: Optional[bool] = Field(description="是否已完成")
+    complete_time: Optional[datetime] = Field(description="完成时间")
+    sender: Optional[str] = Field(description="发送者")
+    read: Optional[bool] = Field(description="是否已读")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "complete_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TodoListSchema(TodoListBaseSchema):
+    pass

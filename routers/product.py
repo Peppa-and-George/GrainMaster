@@ -5,9 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from models.base import ProductSchema, ProductBannerSchema, ProductDetailSchema
 from schema.common import page_with_order, transform_schema
-from schema.product import get_products, get_products_by_name
 from schema.database import SessionLocal
-
 from dependency.image import save_image, delete_image, save_upload_image
 from schema.tables import Product, ProductBanner, ProductDetail
 from schema.tables import AppletsOrder, AppletsOrderDetail

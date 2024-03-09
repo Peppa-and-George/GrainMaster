@@ -37,12 +37,8 @@ def delete_image(icon: str) -> None:
     :param icon: 图片名称
     """
     # 查询商品图片
-    if not os.path.exists(f"{IMAGES_DER}/{icon}"):
-        raise HTTPException(status_code=400, detail="图片不存在")
-    try:
+    if os.path.exists(f"{IMAGES_DER}/{icon}"):
         os.remove(f"{IMAGES_DER}/{icon}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="删除产品图片失败, 错误信息: " + str(e))
 
 
 def save_upload_image(image: UploadFile):

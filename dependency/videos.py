@@ -22,9 +22,5 @@ def delete_video(video_name: str) -> None:
     删除视频
     :param video_name: 视频名称
     """
-    if not Path(f"{VIDEOS_DIR}/{video_name}").exists():
-        return
-    try:
+    if Path(f"{VIDEOS_DIR}/{video_name}").exists():
         Path(f"{VIDEOS_DIR}/{video_name}").unlink()
-    except Exception as e:
-        raise Exception("删除视频失败, 错误信息: " + str(e))

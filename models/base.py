@@ -452,9 +452,6 @@ class QualitySchema(QualityBaseSchema):
 class BannerBaseSchema(BaseModel):
     id: int = Field(description="banner id")
     name: Optional[str] = Field(description="banner标题")
-    icon: Optional[str] = Field(description="banner封面")
-    introduction: Optional[str] = Field(description="banner描述")
-    status: Optional[bool] = Field(description="是否上架")
     synchronize: Optional[bool] = Field(description="是否同步")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")
@@ -467,7 +464,27 @@ class BannerBaseSchema(BaseModel):
 
 
 class BannerSchema(BannerBaseSchema):
-    pass
+    files: Optional[List["BannerFileBaseSchema"]] = Field(
+        description="文件信息", default=[]
+    )
+
+
+class BannerFileBaseSchema(BaseModel):
+    id: int = Field(description="文件ID")
+    banner_id: Optional[int] = Field(description="banner ID")
+    filename: Optional[str] = Field(description="文件名称")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BannerFileSchema(BannerFileBaseSchema):
+    banner: Optional[BannerBaseSchema] = Field(description="banner信息", default={})
 
 
 class PrivilegeUsageBaseSchema(BaseModel):

@@ -810,9 +810,6 @@ class Banner(Base):
     __tablename__ = "banner"  # noqa
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String(64), comment="名称", name="name")
-    icon = Column(String(64), comment="图片", name="icon")
-    introduction = Column(String(64), comment="Banner详情", name="introduction")
-    status = Column(Boolean, comment="是否上架", name="status")
     synchronize = Column(
         Boolean,
         nullable=False,
@@ -829,6 +826,30 @@ class Banner(Base):
         onupdate=datetime.now,
         comment="更新时间",
         name="update_time",
+    )
+
+    files: Mapped[List["BannerFile"]] = relationship(
+        "BannerFile", back_populates="banner"
+    )
+
+
+class BannerFile(Base):
+    __tablename__ = "banner_file"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    banner_id = Column(ForeignKey("banner.id"))
+    filename = Column(String(64), comment="文件", name="file")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+    banner: Mapped["Banner"] = relationship(
+        "Banner", back_populates="files", foreign_keys=[banner_id]
     )
 
 

@@ -67,10 +67,62 @@ class Product(Base):
     applets_order_details: Mapped[List["AppletsOrderDetail"]] = relationship(
         "AppletsOrderDetail", back_populates="product"
     )
+    product_banners: Mapped[List["ProductBanner"]] = relationship(
+        "ProductBanner", back_populates="product"
+    )
+    product_details: Mapped[List["ProductDetail"]] = relationship(
+        "ProductDetail", back_populates="product"
+    )
+
+
+class ProductBanner(Base):
+    __tablename__ = "product_banner"  # noqa
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    product_id = Column(ForeignKey("product.id", ondelete="CASCADE"), comment="产品ID")
+    filename = Column(String, comment="图片路径", name="filename")
+    index = Column(Integer, comment="图片顺序", name="index")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        onupdate=datetime.now,
+        default=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    product: Mapped["Product"] = relationship(
+        "Product", back_populates="product_banners", foreign_keys=[product_id]
+    )
+
+
+class ProductDetail(Base):
+    __tablename__ = "product_detail"  # noqa
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    product_id = Column(ForeignKey("product.id", ondelete="CASCADE"), comment="产品ID")
+    filename = Column(String, comment="图片路径", name="filename")
+    index = Column(Integer, comment="图片顺序", name="index")
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        onupdate=datetime.now,
+        default=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    product: Mapped["Product"] = relationship(
+        "Product", back_populates="product_details", foreign_keys=[product_id]
+    )
 
 
 class Camera(Base):
-    __tablename__ = "camera"
+    __tablename__ = "camera"  # noqa
 
     id = Column(Integer, primary_key=True)
     name = Column(String(128), index=True, name="name", comment="摄像头名称")

@@ -49,7 +49,50 @@ class ProductBaseSchema(BaseModel):
 
 
 class ProductSchema(ProductBaseSchema):
-    pass
+    product_banners: Optional[List["ProductBannerBaseSchema"]] = Field(
+        description="商品banner", default=[]
+    )
+    product_details: Optional[List["ProductDetailBaseSchema"]] = Field(
+        description="商品详情", default=[]
+    )
+
+
+class ProductBannerBaseSchema(BaseModel):
+    id: int = Field(description="商品banner id")
+    product_id: Optional[int] = Field(description="商品id")
+    filename: Optional[str] = Field(description="banner图片")
+    index: Optional[int] = Field(description="banner顺序")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductBannerSchema(ProductBannerBaseSchema):
+    product: Optional[ProductBaseSchema] = Field(description="商品信息", default={})
+
+
+class ProductDetailBaseSchema(BaseModel):
+    id: int = Field(description="商品详情 id")
+    product_id: Optional[int] = Field(description="商品id")
+    filename: Optional[str] = Field(description="详情图片")
+    index: Optional[int] = Field(description="详情顺序")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductDetailSchema(ProductDetailBaseSchema):
+    product: Optional[ProductBaseSchema] = Field(description="商品信息", default={})
 
 
 class LocationBaseSchema(BaseModel):

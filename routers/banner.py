@@ -54,6 +54,7 @@ async def get_banner(
             page_size=page_size,
             order=order,
             order_field=order_field,
+            distinct_field=Banner.id,
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,

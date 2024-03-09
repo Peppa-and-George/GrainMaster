@@ -19,6 +19,65 @@ def generate_order_number() -> str:
     return time_str
 
 
+@order_router.get("/get_order_by_plan", summary="通过年度计划获取订单列表")
+async def get_order_by_plan(
+    year: Optional[int] = Query(None, description="年份"),
+    batch: Optional[int] = Query(None, description="批次"),
+    client: Optional[str] = Query(None, description="客户标识"),
+    client_field_type: Literal["name", "phone_number", "id"] = Query(
+        "name", description="客户字段类型"
+    ),
+    client_type: Optional[str] = Query(None, description="客户类型"),
+    page: int = Query(1, description="页码"),
+    page_size: int = Query(10, description="每页数量"),
+    order_field: str = Query("id", description="排序字段"),
+    order: Literal["asc", "desc"] = Query("desc", description="排序方式"),
+):
+    """
+    # 通过年度计划获取订单列表
+    - **year**: 年份, int, 可选
+    - **batch**: 批次, int, 可选
+    - **client**: 客户标识, str, 可选
+    - **client_field_type**: 客户字段类型, str, 可选, 可选值: name, phone_number, id
+    - **client_type**: 客户类型, str, 可选, 可选值: 定制，非定制
+    - **page**: 页码, int, 可选
+    - **page_size**: 每页数量, int, 可选
+    - **order_field**: 排序字段, str, 可选
+    - **order**: 排序方式, str, 可选, 可选值: asc, desc
+    """
+    try:
+        with SessionLocal() as db:
+            query = (
+                db.query(Order)
+                .join(Plan, Order.plan_id == Plan.id)
+                .join(Client, Order.client_id == Client.id)
+            )
+            if year:
+                query = query.filter(Plan.year == year)
+            if batch:
+                query = query.filter(Plan.batch == batch)
+            if client:
+                if client_field_type == "name":
+                    query = query.filter(Client.name == client)
+                elif client_field_type == "phone_number":
+                    query = query.filter(Client.phone_number == client)
+                elif client_field_type == "id":
+                    query = query.filter(Client.id == client)
+            if client_type:
+                query = query.filter(Client.type == client_type)
+            response = page_with_order(
+                schema=OrderSchema,
+                query=query,
+                page=page,
+                page_size=page_size,
+                order_field=order_field,
+                order=order,
+            )
+            return JSONResponse(status_code=status.HTTP_200_OK, content=response)
+    except Exception as e:
+        return JSONResponse({"code": 500, "message": str(e)})
+
+
 @order_router.get("/get_orders", summary="获取订单列表")
 async def get_orders(
     year: Optional[int] = Query(None, description="年份"),

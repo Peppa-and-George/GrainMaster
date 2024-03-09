@@ -6,11 +6,12 @@ from models.base import UserInfoSchema
 from auth import get_base64_password, verify_password, decode_token
 
 from schema.database import SessionLocal
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.tables import User
 
 
 router = APIRouter()
+
 
 @router.get("/get_current_user", summary="获取当前用户信息")
 async def get_current_user(request: Request):
@@ -92,10 +93,16 @@ async def create_user(
             hashed_passwd=get_base64_password(password),
         )
         db.add(user)
+        db.flush()
+        db.refresh(user)
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "用户创建成功"},
+            content={
+                "code": 0,
+                "message": "用户创建成功",
+                "data": transform_schema(UserInfoSchema, user),
+            },
         )
 
 

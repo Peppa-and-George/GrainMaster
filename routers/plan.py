@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException
 
 from fastapi import APIRouter, Query
 from schema.database import SessionLocal
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.tables import Plan, Location, Quality, Traceability, Order, Client
 from models.base import PlanSchema
 import uuid
@@ -177,10 +177,16 @@ async def add_plan(
             plan.traceability = traceability
 
             db.add(plan)
+            db.flush()
+            db.refresh(plan)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(PlanSchema, plan),
+                },
             )
     except Exception as e:
         raise HTTPException(

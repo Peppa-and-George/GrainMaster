@@ -80,8 +80,17 @@ async def add_camera(
             address=address,
         )
         session.add(cam)
+        session.flush()
+        session.refresh(cam)
         session.commit()
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "添加成功"})
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "code": 0,
+            "message": "添加成功",
+            "data": transform_schema(CameraSchema, cam),
+        },
+    )
 
 
 @camera_router.get("/filter_camera", summary="根据条件筛选摄像头")

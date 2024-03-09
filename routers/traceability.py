@@ -302,10 +302,16 @@ async def add_traceability(
             )
             obj.plan = plan
             db.add(obj)
+            db.flush()
+            db.refresh(obj)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(Traceability, obj),
+                },
             )
     except Exception as e:
         raise HTTPException(

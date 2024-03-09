@@ -7,7 +7,7 @@ import base64
 from datetime import datetime
 
 from models.base import InviteSchema
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.tables import Invite, ClientPrivilege
 from schema.database import SessionLocal
 from auth import get_user_by_request
@@ -120,6 +120,8 @@ async def create_invite(
         invite.invited_customer = client_privilege.client
         invite.client_privilege = client_privilege
         db.add(invite)
+        db.flush()
+        db.refresh(invite)
         db.commit()
 
         return JSONResponse(
@@ -127,7 +129,7 @@ async def create_invite(
             content={
                 "code": 0,
                 "message": "邀请创建成功",
-                "data": {"invite_code": invite.invite_code},
+                "data": transform_schema(InviteSchema, invite),
             },
         )
 

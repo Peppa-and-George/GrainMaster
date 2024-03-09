@@ -4,7 +4,7 @@ from fastapi import Query, HTTPException, status, Body, Form, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 from models.base import ProductSchema
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.product import get_products, get_products_by_name
 from schema.database import SessionLocal
 
@@ -240,12 +240,15 @@ async def add_product_api(
                 }
             )
             db.add(product)
+            db.flush()
+            db.refresh(product)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={
                     "code": 0,
                     "message": "添加成功",
+                    "data": transform_schema(ProductSchema, product),
                 },
             )
     except Exception as e:
@@ -286,12 +289,15 @@ async def add_product_form_api(
                 amount=amount,
             )
             db.add(product)
+            db.flush()
+            db.refresh(product)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={
                     "code": 0,
                     "message": "添加成功",
+                    "data": transform_schema(ProductSchema, product),
                 },
             )
     except Exception as e:

@@ -201,10 +201,16 @@ async def add_client(
                 address=address,
             )
             db.add(client)
+            db.flush()
+            db.refresh(client)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(ClientSchema, client),
+                },
             )
     except Exception as e:
         raise HTTPException(
@@ -239,10 +245,16 @@ async def add_client_address(
                 detail_address=address,
             )
             db.add(address)
+            db.flush()
+            db.refresh(address)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(AddressSchema, address),
+                },
             )
     except Exception as e:
         raise HTTPException(

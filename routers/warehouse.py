@@ -364,7 +364,8 @@ async def add_warehouse(
             warehouse.processing_segments.append(processing_segment)
 
         db.add(warehouse)
-
+        db.flush()
+        db.refresh(warehouse)
         db.commit()
 
         if notify:
@@ -381,7 +382,11 @@ async def add_warehouse(
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "添加成功"},
+            content={
+                "code": 0,
+                "message": "添加成功",
+                "data": transform_schema(WarehouseSchema, warehouse),
+            },
         )
 
 
@@ -640,6 +645,7 @@ async def upload_file(
                     delete_video(processing_segment.video_filename)
                 processing_segment.video_filename = save_video(file)
             processing_segment.completed = True
+            db.flush()
             db.commit()
             update_status(processing_segment.warehouse_id)
             if notify:
@@ -657,7 +663,13 @@ async def upload_file(
                 )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "上传成功"},
+                content={
+                    "code": 0,
+                    "message": "上传成功",
+                    "data": transform_schema(
+                        ProcessingSegmentSchema, processing_segment
+                    ),
+                },
             )
     except Exception as e:
         raise HTTPException(

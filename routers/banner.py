@@ -9,8 +9,7 @@ from schema.tables import Banner
 from schema.database import SessionLocal
 from dependency.file import save_upload_file, delete_file
 from dependency.image import save_upload_image, delete_image
-from schema.common import query_with_page_and_order
-
+from schema.common import query_with_page_and_order, transform_schema
 
 banner_router = APIRouter()
 
@@ -103,10 +102,12 @@ async def add_banner(
             status=online_status,
         )
         db.add(banner)
+        db.flush()
+        db.refresh(banner)
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "添加成功"},
+            content={"code": 0, "message": "添加成功", "data": transform_schema(BannerSchema, banner)},
         )
 
 

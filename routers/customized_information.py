@@ -52,9 +52,22 @@ async def create_customized_information(
             introduction=introduction, icon=filename
         )
         session.add(customized_information)
+        session.flush()
+        session.refresh(customized_information)
         session.commit()
         return JSONResponse(
-            status_code=status.HTTP_201_CREATED, content={"code": 0, "message": "创建成功"}
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "code": 0,
+                "message": "创建成功",
+                "data": [
+                    {
+                        "id": customized_information.id,
+                        "introduction": customized_information.introduction,
+                        "icon": customized_information.icon,
+                    }
+                ],
+            },
         )
 
 

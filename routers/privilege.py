@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from models.base import PrivilegeSchema, ClientPrivilegeRelationSchema
 from schema.tables import Privilege, Client, ClientPrivilege, PrivilegeUsage
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
 
 privilege_router = APIRouter()
@@ -325,10 +325,18 @@ async def add_privilege_client_relationship(
                     client_privilege.privilege = privilege
                     client_privilege.client = client_obj
                     db.add(client_privilege)
+                db.flush()
+                db.refresh(client_privilege)
             db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "添加成功"},
+            content={
+                "code": 0,
+                "message": "添加成功",
+                "data": transform_schema(
+                    ClientPrivilegeRelationSchema, client_privilege
+                ),
+            },
         )
     except Exception as e:
         raise HTTPException(
@@ -392,10 +400,18 @@ async def add_privilege_to_client_by_id(
                     client_privilege.privilege = privilege
                     client_privilege.client = client_obj
                     db.add(client_privilege)
+                db.flush()
+                db.refresh(client_privilege)
                 db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "添加成功"},
+            content={
+                "code": 0,
+                "message": "添加成功",
+                "data": transform_schema(
+                    ClientPrivilegeRelationSchema, client_privilege
+                ),
+            },
         )
     except Exception as e:
         raise HTTPException(
@@ -430,10 +446,16 @@ async def create_privilege(
                 expired_time=datetime.strptime(expired_time, "%Y-%m-%d %H:%M:%S"),
             )
             db.add(privilege)
+            db.flush()
+            db.refresh(privilege)
             db.commit()
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "创建成功"},
+                content={
+                    "code": 0,
+                    "message": "创建成功",
+                    "data": transform_schema(PrivilegeSchema, privilege),
+                },
             )
     except Exception as e:
         raise HTTPException(

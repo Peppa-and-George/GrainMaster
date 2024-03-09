@@ -169,11 +169,17 @@ async def add_location_api(
                 customized=customized,
             )
             db.add(location)
+            db.flush()
+            db.refresh(location)
             db.commit()
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(LocationSchema, location),
+                },
             )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

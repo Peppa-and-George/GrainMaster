@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, status, Body, Form, UploadFile, File, Requ
 from fastapi.responses import JSONResponse
 
 from dependency.report import save_report, delete_report
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
 from schema.tables import Quality, Plan, Location, Warehouse
 from models.base import QualitySchema
@@ -108,7 +108,17 @@ async def create_quality(
         )
         quality.plan = warehouse.plan
         db.add(quality)
+        db.flush()
+        db.refresh(quality)
         db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "code": 0,
+                "message": "创建成功",
+                "data": transform_schema(QualitySchema, quality),
+            },
+        )
 
 
 @report_router.put("/update_report", summary="更新质报告")

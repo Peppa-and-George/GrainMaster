@@ -45,3 +45,6 @@ def add_message(
         db.add(message)
         db.commit()
         return {"code": 0, "message": "消息添加成功"}
+
+
+# @message_router.post("/add")

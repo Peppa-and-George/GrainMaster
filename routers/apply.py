@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 import base64
 from datetime import datetime
 
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 from schema.tables import Apply, ClientPrivilege
 from schema.database import SessionLocal
 from auth import get_user_by_request
@@ -127,15 +127,15 @@ async def create_application(
         application.client_privilege = client_privilege
         application.applicant = client_privilege.client
         db.add(application)
+        db.flush()
+        db.refresh(application)
         db.commit()
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
                 "code": 0,
                 "message": "创建成功",
-                "data": {
-                    "application_code": application.application_code,
-                },
+                "data": transform_schema(ApplySchema, application),
             },
         )
 

@@ -176,9 +176,16 @@ async def create_applets_order_api(
                 order.details.append(detail)
             order.amounts_payable = amounts_payable
             db.add(order)
+            db.flush()
+            db.refresh(order)
             db.commit()
             return JSONResponse(
-                status_code=status.HTTP_200_OK, content={"code": 0, "message": "创建成功"}
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 0,
+                    "message": "创建成功",
+                    "data": transform_schema(AppletsOrderSchema, order),
+                },
             )
     except Exception as e:
         return JSONResponse(

@@ -230,6 +230,8 @@ async def add_transport_api(
                 transport.segments.append(transport_segment)
 
             db.add(transport)
+            db.flush()
+            db.refresh(transport)
             db.commit()
 
             if notify:
@@ -254,7 +256,11 @@ async def add_transport_api(
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "添加成功"},
+                content={
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(TransportSchema, transport),
+                },
             )
     except Exception as e:
         return JSONResponse(
@@ -381,6 +387,7 @@ async def upload_file_api(
                     delete_video(transport_segment.video_filename)
                 transport_segment.video_filename = save_video(file)
             transport_segment.completed = True
+            db.flush()
             db.commit()
             if notify:
                 orders = (
@@ -410,7 +417,11 @@ async def upload_file_api(
 
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 0, "message": "上传成功"},
+                content={
+                    "code": 0,
+                    "message": "上传成功",
+                    "data": transform_schema(TransportSegmentSchema, transport_segment),
+                },
             )
     except Exception as e:
         return JSONResponse(

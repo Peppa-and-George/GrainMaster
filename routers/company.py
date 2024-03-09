@@ -4,6 +4,7 @@ from fastapi.routing import APIRouter
 from fastapi import Body, UploadFile, File, Form, Query, status
 from fastapi.responses import JSONResponse
 
+from schema.common import transform_schema
 from schema.tables import CompanyInfo
 from schema.database import SessionLocal
 from dependency.image import save_upload_image, delete_image
@@ -77,9 +78,27 @@ def add_company(
             logo=filename,
         )
         db.add(company)
+        db.flush()
+        db.refresh(company)
         db.commit()
         return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 200, "msg": "添加成功"}
+            status_code=status.HTTP_200_OK,
+            content={
+                "code": 200,
+                "msg": "添加成功",
+                "data": [
+                    {
+                        "id": company.id,
+                        "name": company.name,
+                        "address": company.address,
+                        "phone": company.phone,
+                        "email": company.email,
+                        "logo": company.logo,
+                        "introduction": company.introduction,
+                        "process_flow": company.process_flow,
+                    }
+                ],
+            },
         )
 
 

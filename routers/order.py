@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from models.base import OrderSchema
 from schema.database import SessionLocal
 from schema.tables import Order, Plan, Client, Location, Product, Camera
-from schema.common import page_with_order
+from schema.common import page_with_order, transform_schema
 
 order_router = APIRouter()
 
@@ -267,19 +267,26 @@ async def add_order(
 
     try:
         with SessionLocal() as db:
-            db.add(
-                Order(
-                    plan_id=plan_id,
-                    client_id=client_id,
-                    product_id=product_id,
-                    customized_area=customized_area,
-                    total_amount=total_amount,
-                    camera_id=camera_id,
-                    order_number=generate_order_number(),
-                )
+            new_order = Order(
+                plan_id=plan_id,
+                client_id=client_id,
+                product_id=product_id,
+                customized_area=customized_area,
+                total_amount=total_amount,
+                camera_id=camera_id,
+                order_number=generate_order_number(),
             )
+            db.add(new_order)
+            db.flush()
+            db.refresh(new_order)
             db.commit()
-            return JSONResponse({"code": 0, "message": "添加成功"})
+            return JSONResponse(
+                {
+                    "code": 0,
+                    "message": "添加成功",
+                    "data": transform_schema(OrderSchema, new_order),
+                }
+            )
     except Exception as e:
         return JSONResponse({"code": 1, "message": str(e)})
 

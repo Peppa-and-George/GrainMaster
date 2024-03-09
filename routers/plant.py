@@ -242,6 +242,8 @@ async def add_plant_plan(
         plant_plan.segment = segment
         plant_plan.operator = operator
         db.add(plant_plan)
+        db.flush()
+        db.refresh(plant_plan)
         db.commit()
 
         if notify:
@@ -265,7 +267,11 @@ async def add_plant_plan(
                 )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "添加成功"},
+            content={
+                "code": 0,
+                "message": "添加成功",
+                "data": transform_schema(PlantPlanSchema, plant_plan),
+            },
         )
 
 
@@ -302,9 +308,16 @@ async def add_segment(
                 operate = PlantOperate(name=step["operate_name"], index=step["index"])
                 segment.operations.append(operate)
         db.add(segment)
+        db.flush()
+        db.refresh(segment)
         db.commit()
         return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "添加成功"}
+            status_code=status.HTTP_200_OK,
+            content={
+                "code": 0,
+                "message": "添加成功",
+                "data": transform_schema(SegmentSchema, segment),
+            },
         )
 
 

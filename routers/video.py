@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from dependency.image import save_upload_image, delete_image
 from dependency.videos import save_video, delete_video
+from schema.common import transform_schema
 from schema.tables import Video
 from schema.database import SessionLocal
 
@@ -59,9 +60,26 @@ def add_video_api(
             synchronize=synchronized,
         )
         session.add(video)
+        session.flush()
+        session.refresh(video)
         session.commit()
         return JSONResponse(
-            status_code=status.HTTP_201_CREATED, content={"code": 0, "message": "创建成功"}
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "code": 0,
+                "message": "创建成功",
+                "data": [
+                    {
+                        "id": video.id,
+                        "title": video.title,
+                        "icon": video.icon,
+                        "introduction": video.introduction,
+                        "synchronize": video.synchronize,
+                        "create_time": video.create_time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "update_time": video.update_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                ],
+            },
         )
 
 

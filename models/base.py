@@ -303,7 +303,7 @@ class OperationBaseSchema(BaseModel):
 
 class OperationSchema(OperationBaseSchema):
     segment: Optional[SegmentBaseSchema] = Field(description="种植信息", default={})
-    records: Optional[List["OperationImplementBaseSchema"]] = Field(  # TODO
+    records: Optional[List["OperationImplementBaseSchema"]] = Field(
         description="操作记录信息", default=[]
     )
 

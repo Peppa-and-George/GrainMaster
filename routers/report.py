@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from dependency.report import save_report, delete_report
 from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
-from schema.tables import Quality, Plan, Location, Warehouse
+from schema.tables import Quality, Plan, Location, Warehouse, Transport
 from models.base import QualitySchema
 from auth import get_user_by_request
 
@@ -75,10 +75,9 @@ async def filter_quality_api(
     summary="创建质检报告",
     deprecated=True,
 )
-async def create_quality(
+async def create_warehouse_quality(
     req: Request,
-    warehouse_id: int = Form(..., description="仓库id"),
-    report_type: Literal["仓储加工", "原料运输"] = Form(..., description="报告类型"),
+    warehouse_id: int = Form(..., description="仓储加工ID"),
     report_name: Optional[str] = Form(None, description="质检报告名称"),
     file: Optional[UploadFile] = File(None, description="质检报告"),
 ):
@@ -101,12 +100,60 @@ async def create_quality(
         quality = Quality(
             name=report_name,
             report=filename,
-            type=report_type,
+            type="仓储加工",
             status="已上传" if filename else "未上传",
             people=get_user_by_request(req).get("sub") if file else None,
             upload_time=datetime.now() if file else None,
         )
         quality.plan = warehouse.plan
+        quality.warehouse = warehouse
+        db.add(quality)
+        db.flush()
+        db.refresh(quality)
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={
+                "code": 0,
+                "message": "创建成功",
+                "data": transform_schema(QualitySchema, quality),
+            },
+        )
+
+
+@report_router.post("add_transport_report", summary="添加原料运输质检报告")
+async def add_transport_quality(
+    req: Request,
+    transport_id: int = Form(..., description="原料运输计划id"),
+    report_name: Optional[str] = Form(None, description="质检报告名称"),
+    file: Optional[UploadFile] = File(None, description="质检报告"),
+):
+    """
+    # 添加原料运输质检报告
+    - **plan_id**: 计划id, 必填
+    - **report_name**: 质检报告名称, str, 可选
+    - **files**: 质检报告, 可选
+    - **report_type**: 报告类型, 必填 范围：仓储加工|原料运输
+    """
+    filename = save_report(file) if file else None
+    with SessionLocal() as db:
+        transport = db.query(Transport).filter(Transport.id == transport_id).first()
+        if not transport:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "原料运输计划不存在"},
+            )
+        report_name = report_name if report_name else file.filename
+        quality = Quality(
+            name=report_name,
+            report=filename,
+            type="原料运输",
+            status="已上传" if filename else "未上传",
+            people=get_user_by_request(req).get("sub") if file else None,
+            upload_time=datetime.now() if file else None,
+        )
+        quality.plan = transport.plan
+        quality.transport = transport
         db.add(quality)
         db.flush()
         db.refresh(quality)

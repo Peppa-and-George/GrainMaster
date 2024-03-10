@@ -242,7 +242,7 @@ class ClientPrivilegeRelationSchema(ClientPrivilegeRelationBaseSchema):
 class SegmentBaseSchema(BaseModel):
     id: int = Field(description="种植ID")
     name: Optional[str] = Field(description="种植名称")
-    completed: Optional[bool] = Field(description="是否完成")
+    status: Optional[str] = Field(description="种植状态")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")
 
@@ -257,32 +257,35 @@ class SegmentSchema(SegmentBaseSchema):
     operations: Optional[List["OperationBaseSchema"]] = Field(
         description="操作信息", default=[]
     )
-    files: Optional[List["SegmentFileBaseSchema"]] = Field(
-        description="文件信息", default=[]
+    plant_segment_plans: Optional[List["SegmentPlanBaseSchema"]] = Field(
+        description="种植环节计划信息", default=[]
     )
 
 
-class PlantPlanBaseSchema(BaseModel):
+class SegmentPlanBaseSchema(BaseModel):
     plan_id: int = Field(description="计划ID")
     segment_id: Optional[int] = Field(description="种植ID")
     operator_id: Optional[int] = Field(description="操作人ID")
-    operation_date: Optional[datetime] = Field(description="操作日期")
+    operate_time: Optional[datetime] = Field(description="操作日期")
     remarks: Optional[str] = Field(description="备注")
     status: Optional[str] = Field(description="状态")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")
 
-    @field_serializer("create_time", "update_time", "operation_date")
+    @field_serializer("create_time", "update_time", "operate_time")
     def format_time(self, v: Any) -> Any:
         return v.strftime("%Y-%m-%d %H:%M:%S")
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlantPlanSchema(PlantPlanBaseSchema):
-    segment: Optional[SegmentBaseSchema] = Field(description="种植信息", default={})
+class SegmentPlanSchema(SegmentPlanBaseSchema):
+    segment: Optional[SegmentBaseSchema] = Field(description="种植环节信息", default={})
     plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
     operator: Optional[ClientBaseSchema] = Field(description="操作人信息", default={})
+    implementations: Optional[List["OperationImplementBaseSchema"]] = Field(
+        description="操作实施信息", default=[]
+    )
 
 
 class OperationBaseSchema(BaseModel):
@@ -299,7 +302,37 @@ class OperationBaseSchema(BaseModel):
 
 
 class OperationSchema(OperationBaseSchema):
-    pass
+    segment: Optional[SegmentBaseSchema] = Field(description="种植信息", default={})
+    records: Optional[List["OperationImplementBaseSchema"]] = Field(  # TODO
+        description="操作记录信息", default=[]
+    )
+
+
+class OperationImplementBaseSchema(BaseModel):
+    id: int = Field(description="操作实施ID")
+    operation_id: Optional[int] = Field(description="操作ID")
+    segment_plan_id: Optional[int] = Field(description="种植环节与种植计划关系ID")
+    status: Optional[str] = Field(description="操作状态")
+    video_filename: Optional[str] = Field(description="视频文件名")
+    image_filename: Optional[str] = Field(description="图片文件名")
+    operator: Optional[str] = Field(description="操作人")
+    remarks: Optional[str] = Field(description="备注")
+    operate_time: Optional[datetime] = Field(description="操作时间")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time", "operate_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OperationImplementSchema(OperationImplementBaseSchema):
+    operation: Optional[OperationBaseSchema] = Field(description="操作信息", default={})
+    segment_plan: Optional[SegmentPlanBaseSchema] = Field(
+        description="种植环节计划", default={}
+    )
 
 
 class TransportBaseSchema(BaseModel):
@@ -404,7 +437,7 @@ class OrderBaseSchema(BaseModel):
 
 class OrderSchema(OrderBaseSchema):
     client: Optional[ClientBaseSchema] = Field(description="客户信息", default={})
-    plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
+    plan: Optional[PlanSchema] = Field(description="计划信息", default={})
     product: Optional[ProductBaseSchema] = Field(description="产品信息", default={})
     camera: Optional["CameraBaseSchema"] = Field(description="摄像头信息", default={})
     logistics_plans: List["LogisticsPlanBaseSchema"] = Field(

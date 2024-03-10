@@ -164,6 +164,38 @@ async def update_quality(
         )
 
 
+@report_router.post("/upload_report", summary="上传质报告")
+async def upload_quality(
+    req: Request,
+    report_id: int = Form(..., description="质检报告id"),
+    file: UploadFile = File(..., description="质检报告"),
+):
+    """
+    # 上传质报告
+    - **report_id**: 质检报告id
+    - **files**: 质检报告, 文件类型
+    """
+    with SessionLocal() as db:
+        quality = db.query(Quality).filter(Quality.id == report_id).first()
+        if not quality:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "质检记录不存在"},
+            )
+        if quality.report:
+            delete_report(quality.report)
+        filename = save_report(file)
+        quality.report = filename
+        quality.status = "已上传"
+        quality.people = get_user_by_request(req).get("sub")
+        quality.upload_time = datetime.now()
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "上传成功"},
+        )
+
+
 @report_router.delete("/delete_report", summary="删除质报告")
 async def delete_quality(
     report_id: int = Query(..., description="质检报告id"),

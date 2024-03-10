@@ -179,7 +179,7 @@ async def update_todo_list(
         if read is not None:
             todo_list.read = read
         if completed is not None:
-            todo_list.complete = completed
+            todo_list.status = completed
             todo_list.complete_time = datetime.now()
         session.commit()
         return JSONResponse(

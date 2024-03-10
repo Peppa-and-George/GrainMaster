@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse, Response
 
 from models.base import (
     LocationSchema,
-    PlantPlanSchema,
+    SegmentPlanSchema,
     TransportSchema,
     WarehouseSchema,
     LogisticsPlanSchema,
@@ -22,7 +22,7 @@ from schema.tables import (
     Traceability,
     Plan,
     Location,
-    PlantPlan,
+    SegmentPlan,
     Transport,
     Warehouse,
     LogisticsPlan,
@@ -163,7 +163,9 @@ async def get_traceability_detail(
             db.commit()
             plan = db.query(Plan).filter(Plan.id == obj.plan_id).first()
 
-            plants = db.query(PlantPlan).filter(PlantPlan.plan_id == obj.plan_id).all()
+            plants = (
+                db.query(SegmentPlan).filter(SegmentPlan.plan_id == obj.plan_id).all()
+            )
             transports = (
                 db.query(Transport).filter(Transport.plan_id == obj.plan_id).all()
             )
@@ -190,7 +192,7 @@ async def get_traceability_detail(
                 "updated_time": datetime_to_str(obj.update_time),
                 "location": transform_schema(LocationSchema, location)[0],
                 "plan": transform_schema(PlanSchema, plan)[0],
-                "plants": transform_schema(PlantPlanSchema, plants),
+                "plants": transform_schema(SegmentPlan, plants),
                 "transports": transform_schema(TransportSchema, transports),
                 "warehouses": transform_schema(WarehouseSchema, warehouses),
                 "logistics": transform_schema(LogisticsPlanSchema, logistics),

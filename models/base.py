@@ -253,6 +253,12 @@ class SegmentBaseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SegmentSchemaContainOperation(SegmentBaseSchema):
+    operations: Optional[List["OperationBaseSchema"]] = Field(
+        description="操作步骤信息", default=[]
+    )
+
+
 class SegmentSchema(SegmentBaseSchema):
     operations: Optional[List["OperationBaseSchema"]] = Field(
         description="操作步骤信息", default=[]
@@ -281,7 +287,9 @@ class SegmentPlanBaseSchema(BaseModel):
 
 
 class SegmentPlanSchema(SegmentPlanBaseSchema):
-    segment: Optional[SegmentBaseSchema] = Field(description="种植环节信息", default={})
+    segment: Optional[SegmentSchemaContainOperation] = Field(
+        description="种植环节信息", default={}
+    )
     plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
     operator: Optional[ClientBaseSchema] = Field(description="操作人信息", default={})
     implementations: Optional[List["OperationImplementBaseSchema"]] = Field(

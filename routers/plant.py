@@ -17,12 +17,12 @@ from dependency.videos import save_video, delete_video
 from schema.tables import (
     Segment,
     PlantOperate,
-    PlantPlan,
     Plan,
     Location,
     Client,
     Order,
-    SegmentFile,
+    SegmentPlan,
+    OperationImplementationInformation,
 )
 from schema.common import (
     page_with_order,
@@ -34,21 +34,82 @@ from schema.database import SessionLocal
 from dependency.image import save_upload_image, delete_image
 from routers.message import add_message
 from models.base import (
-    PlantPlanSchema,
-    PlantPlanBaseSchema,
     SegmentSchema,
-    SegmentFileSchema,
+    SegmentPlanSchema,
+    OperationImplementBaseSchema,
 )
 
 plant_router = APIRouter()
 
 
-@plant_router.get("/get_plant_plan", summary="获取种植计划")
-async def get_plant_plan(
+@plant_router.get("/get_operation_implementation", summary="获取操作步骤实施信息")
+async def get_operation_implementation(
+    implementation_id: Optional[int] = Query(None, title="操作步骤id"),
+    segment_plan_id: Optional[int] = Query(None, title="种植环节计划id"),
+    operation: Union[int, str] = Query(None, title="操作标识"),
+    operation_field_type: Literal["id", "name"] = Query("id", title="操作字段类型"),
+    page: int = Query(1, title="页数"),
+    page_size: int = Query(10, title="每页数量"),
+    order_by: str = Query("id", title="排序字段"),
+    order: Literal["asc", "desc"] = Query("desc", title="排序方式"),
+):
+    """
+    # 获取操作步骤信息
+    - **implementation_id**: 操作步骤id, int, optional
+    - **segment_plan_id**: 种植环节计划id, int, optional
+    - **operation**: 操作标识, 可选
+    - **operation_field_type**: 操作字段类型, string, default: id, 可选值：id, name
+    - **page**: 页数, int, default: 1
+    - **page_size**: 每页数量, int, default: 10
+    - **order_by**: 排序字段, string, default: id
+    - **order**: 排序方式, string, default: desc
+    """
+    with SessionLocal() as db:
+        query = (
+            db.query(OperationImplementationInformation)
+            .join(
+                SegmentPlan,
+                OperationImplementationInformation.segment_plan_id == SegmentPlan.id,
+            )
+            .join(
+                PlantOperate,
+                OperationImplementationInformation.operation_id == PlantOperate.id,
+            )
+        )
+        if implementation_id:
+            query = query.filter(
+                OperationImplementationInformation.id == implementation_id
+            )
+        if segment_plan_id:
+            query = query.filter(SegmentPlan.id == segment_plan_id)
+        if operation:
+            if operation_field_type == "id":
+                query = query.filter(PlantOperate.id == operation)
+            else:
+                query = query.filter(PlantOperate.name == operation)
+        response = page_with_order(
+            schema=OperationImplementBaseSchema,
+            query=query,
+            page_size=page_size,
+            page=page,
+            order_field=order_by,
+            order=order,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=response,
+        )
+
+
+@plant_router.get("/get_segment_plan", summary="获取种植环节计划")
+async def get_segment_plan(
+    segment_plan_id: Optional[int] = Query(None, title="种植环节计划id"),
     plan_id: Optional[int] = Query(None, title="计划id"),
+    segment: Union[int, str] = Query(None, title="种植环节标识"),
+    segment_field_type: Literal["id", "name"] = Query("id", title="种植环节字段类型"),
     year: Optional[int] = Query(None, title="年份"),
     batch: Optional[int] = Query(None, title="批次"),
-    location: Union[str, int, None] = Query(None, title="地点"),
+    location: Optional[str] = Query(None, title="地点"),
     location_field_type: Literal["id", "name"] = Query("id", title="地点字段类型"),
     page: int = Query(1, title="页数"),
     page_size: int = Query(10, title="每页数量"),
@@ -56,21 +117,36 @@ async def get_plant_plan(
     order: Literal["asc", "desc"] = Query("desc", title="排序方式"),
 ):
     """
-    # 获取种植计划
-    - **plan_id**: 计划id, int, required
+    # 获取种植环节计划
+    - **segment_plan_id**: 种植环节计划id, int, optional
+    - **plan_id**: 计划id, int, optional
+    - **segment**: 种植环节标识, 可选
+    - **segment_field_type**: 种植环节字段类型, string, default: id, 可选值：id, name
     - **year**: 年份, int, optional
     - **batch**: 批次, int, optional
-    - **location**: 基地标识, string, optional
-    - **location_field_type**: 基地字段类型, string, default: id，可选值：id, name
+    - **location**: 地点, string, optional
+    - **location_field_type**: 地点字段类型, string, default: id, 可选值：id, name
     - **page**: 页数, int, default: 1
     - **page_size**: 每页数量, int, default: 10
     - **order_by**: 排序字段, string, default: id
     - **order**: 排序方式, string, default: desc
     """
     with SessionLocal() as db:
-        query = db.query(PlantPlan).join(Plan, PlantPlan.plan_id == Plan.id)
+        query = (
+            db.query(SegmentPlan)
+            .join(Plan, SegmentPlan.plan_id == Plan.id)
+            .outerjoin(Segment, SegmentPlan.segment_id == Segment.id)
+            .outerjoin(Location, Plan.location_id == Location.id)
+        )
+        if segment_plan_id:
+            query = query.filter(SegmentPlan.id == segment_plan_id)
         if plan_id:
-            query = query.filter(PlantPlan.plan_id == plan_id)
+            query = query.filter(SegmentPlan.plan_id == plan_id)
+        if segment:
+            if segment_field_type == "id":
+                query = query.filter(SegmentPlan.segment_id == segment)
+            else:
+                query = query.filter(Segment.name == segment)
         if year:
             query = query.filter(Plan.year == year)
         if batch:
@@ -79,20 +155,18 @@ async def get_plant_plan(
             if location_field_type == "id":
                 query = query.filter(Plan.location_id == location)
             else:
-                query = query.join(Location, Plan.location_id == Location.id).filter(
-                    Location.name == location
-                )
+                query = query.filter(Location.name == location)
         response = page_with_order(
-            PlantPlanSchema,
-            query,
-            page,
-            page_size,
-            order_by,
-            order,
+            schema=SegmentPlanSchema,
+            query=query,
+            page_size=page_size,
+            page=page,
+            order_field=order_by,
+            order=order,
         )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "查询成功", "data": response},
+            content=response,
         )
 
 
@@ -115,87 +189,35 @@ async def get_segment(
     - **order**: 排序方式, string, default: desc
     """
     with SessionLocal() as db:
-        query = db.query(Segment).join(
-            PlantOperate, Segment.id == PlantOperate.segment_id
-        )
+        query = db.query(Segment)
         if segment:
             if segment_field_type == "id":
                 query = query.filter(Segment.id == segment)
             else:
                 query = query.filter(Segment.name == segment)
-        total = query.count()
-        query = query_with_order(query, order_by, order)
-        query = query_with_page(query, page, page_size)
-        objs = query.all()
-        data = []
-        for obj in objs:
-            segment_data = {"name": obj.name, "segment_id": obj.id, "operations": []}
-            for operate in obj.operations:
-                segment_data["operations"].append(
-                    {
-                        "operate_name": operate.name,
-                        "index": operate.index,
-                        "operate_id": operate.id,
-                    }
-                )
-            data.append(segment_data)
+        response = page_with_order(
+            schema=SegmentSchema,
+            query=query,
+            page_size=page_size,
+            page=page,
+            order_field=order_by,
+            order=order,
+        )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={
-                "code": 0,
-                "message": "查询成功",
-                "data": data,
-                "total": total,
-                "total_page": (total + page_size - 1) // page_size,
-                "order_by": order_by,
-                "order": order,
-                "page": page,
-                "page_size": page_size,
-            },
+            content=response,
         )
 
 
-@plant_router.get("/get_segment_file", summary="获取种植环节文件")
-async def get_segment_file(
-    segment: Union[int, str, None] = Query(None, title="环节标识"),
-    segment_field_type: Literal["id", "name"] = Query("id", title="环节字段类型"),
-    file_type: Literal["image", "video", "all"] = Query("all", title="文件类型"),
-    page: int = Query(1, title="页数"),
-    page_size: int = Query(10, title="每页数量"),
-    order_by: str = Query("id", title="排序字段"),
-    order: Literal["asc", "desc"] = Query("desc", title="排序方式"),
-):
-    """
-    # 获取种植环节文件
-    - **segment**: 种植环节标识, 可选
-    - **file_type**: 文件类型, string, optional, 可选值：image, video, all
-    - **page**: 页数, int, default: 1
-    - **page_size**: 每页数量, int, default: 10
-    - **order_by**: 排序字段, string, default: id
-    - **order**: 排序方式, string, default: desc
-    """
-    with SessionLocal() as db:
-        query = db.query(SegmentFile)
-        if segment:
-            if segment_field_type == "id":
-                query = query.filter(SegmentFile.segment_id == segment)
-            else:
-                query = query.join(
-                    Segment, SegmentFile.segment_id == Segment.id
-                ).filter(Segment.name == segment)
-        if file_type != "all":
-            query = query.filter(SegmentFile.type == file_type)
-        response = page_with_order(
-            SegmentFileSchema, query, page, page_size, order_by, order
-        )
-        return JSONResponse(status_code=status.HTTP_200_OK, content=response)
-
-
-@plant_router.post("/add_plant_plan", summary="添加种植计划")
-async def add_plant_plan(
+@plant_router.post("/add_segment_plan", summary="添加种植环节计划")
+async def add_segment_plan(
     plan_id: int = Body(..., title="计划id"),
-    segment_id: int = Body(..., title="种植环节id"),
-    operator_id: int = Body(..., title="操作人id"),
+    segment: int = Body(..., title="种植环节标识"),
+    segment_field_type: Literal["id", "name"] = Body("id", title="种植环节字段类型"),
+    operator: Union[int, str] = Body(..., title="操作人标识"),
+    operator_field_type: Literal["id", "name", "phone_number"] = Body(
+        "id", title="操作人字段类型"
+    ),
     operate_time: str = Body(
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         title="操作时间",
@@ -207,43 +229,75 @@ async def add_plant_plan(
     """
     # 添加种植计划
     - **plan_id**: 计划id, int, required
-    - **segment_id**: 种植环节id, int, required
-    - **operator_id**: 操作人id, int, required
+    - **segment**: 种植环节标识, int, required
+    - **segment_field_type**: 种植环节字段类型, string, default: id, 可选值：id, name
+    - **operator**: 操作人标识, string | int, required
+    - **operator_field_type**: 操作人字段类型, string, default: id, 可选值：id(int), name(string), phone_number(string)
     - **operate_time**: 操作时间, string, required, default: 当前时间
     - **remark**: 备注, string, optional
     - **notify**: 是否通知客户, bool, optional, default: False
     """
     with SessionLocal() as db:
+        # 验证是否存在该年度的种植计划
+        old_plant_plan = (
+            db.query(SegmentPlan)
+            .filter(SegmentPlan.plan_id == plan_id, SegmentPlan.segment_id == segment)
+            .first()
+        )
+        if old_plant_plan:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "种植计划已存在，不可重复添加"},
+            )
+
         plan = db.query(Plan).filter(Plan.id == plan_id).first()
         if not plan:
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content={"code": 1, "message": "计划不存在"}
             )
-
-        segment = db.query(Segment).filter(Segment.id == segment_id).first()
+        if segment_field_type == "id":
+            segment = db.query(Segment).filter(Segment.id == segment).first()
+        else:
+            segment = db.query(Segment).filter(Segment.name == segment).first()
         if not segment:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "种植环节不存在"},
             )
 
-        operator = db.query(Client).filter(Client.id == operator_id).first()
+        if operator_field_type == "id":
+            operator = db.query(Client).filter(Client.id == operator).first()
+        elif operator_field_type == "name":
+            operator = db.query(Client).filter(Client.name == operator).first()
+        else:
+            operator = db.query(Client).filter(Client.phone_number == operator).first()
         if not operator:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "操作人不存在"},
+                content={"code": 1, "message": "未查询到操作人"},
             )
 
-        plant_plan = PlantPlan(
-            operation_date=datetime.strptime(operate_time, "%Y-%m-%d %H:%M:%S"),
+        segment_plan = SegmentPlan(
+            operate_time=datetime.strptime(operate_time, "%Y-%m-%d %H:%M:%S"),
             remarks=remark,
+            status="未开始",
         )
-        plant_plan.plan = plan
-        plant_plan.segment = segment
-        plant_plan.operator = operator
-        db.add(plant_plan)
+        segment_plan.plan = plan
+        segment_plan.segment = segment
+        segment_plan.operator = operator
+
+        # 添加实施步骤
+        for operation in segment.operations:
+            implementation = OperationImplementationInformation(
+                status="未开始",
+            )
+            implementation.segment_plan = segment_plan
+            implementation.operation = operation
+            segment_plan.implementations.append(implementation)
+
+        db.add(segment_plan)
         db.flush()
-        db.refresh(plant_plan)
+        db.refresh(segment_plan)
         db.commit()
 
         if notify:
@@ -262,7 +316,9 @@ async def add_plant_plan(
                     receiver_id=order[0],
                     sender="系统",
                     message_type="添加种植计划",
-                    details=json.dumps(transform_schema(PlantPlanSchema, plant_plan)),
+                    details=json.dumps(
+                        transform_schema(SegmentPlanSchema, segment_plan)
+                    ),
                     tag=1,
                 )
         return JSONResponse(
@@ -270,7 +326,7 @@ async def add_plant_plan(
             content={
                 "code": 0,
                 "message": "添加成功",
-                "data": transform_schema(PlantPlanSchema, plant_plan),
+                "data": transform_schema(SegmentPlanSchema, segment_plan),
             },
         )
 
@@ -302,10 +358,12 @@ async def add_segment(
                 content={"code": 1, "message": f"种植环节：{name}已存在"},
             )
 
-        segment = Segment(name=name)
+        segment = Segment(name=name, status="未开始")
         if operate_steps:
             for step in operate_steps:
-                operate = PlantOperate(name=step["operate_name"], index=step["index"])
+                operate = PlantOperate(
+                    name=step["operate_name"], index=step.get("index", 0)
+                )
                 segment.operations.append(operate)
         db.add(segment)
         db.flush()
@@ -321,383 +379,204 @@ async def add_segment(
         )
 
 
-@plant_router.put("/update_segment", summary="更新种植环节")
-async def update_segment(
-    segment_id: int = Body(..., title="环节id"),
-    name: Optional[str] = Body(None, title="环节名称"),
-    operate_steps: Optional[List[Dict]] = Body(
-        None,
-        title="环节描述",
-        examples=[
-            [
-                {"operate_name": "步骤一", "index": 1},
-                {"operate_name": "步骤二", "index": 2},
-            ]
-        ],
-    ),
-    notify: Optional[bool] = Body(False, title="是否通知客户"),
-):
-    """
-    # 更新种植环节
-    - **segment_id**: 环节id, int, required
-    - **name**: 环节名称, string, optional
-    - **operate_steps**: 种植环节操作, list, optional
-    - **notify**: 是否通知客户, bool, optional, default: False
-    """
-    with SessionLocal() as db:
-        segment = db.query(Segment).filter(Segment.id == segment_id).first()
-        if not segment:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "环节不存在"},
-            )
-
-        if name:
-            segment.name = name
-
-        if operate_steps:
-            # 删除原有操作
-            for operate in segment.operations:
-                db.delete(operate)
-            for step in operate_steps:
-                operate = PlantOperate(name=step["operate_name"], index=step["index"])
-                segment.operations.append(operate)
-        db.commit()
-
-        if notify:
-            # 添加消息
-            orders = (
-                db.query(Order.client_id)
-                .join(Plan, Order.plan_id == Plan.id)
-                .join(PlantPlan, Plan.id == PlantPlan.plan_id)
-                .filter(PlantPlan.segment_id == segment_id)
-                .group_by(Order.client_id)
-                .all()
-            )
-
-            for order in orders:
-                add_message(
-                    title="更新种植环节",
-                    content=f"种植环节：{segment.name}更新成功",
-                    receiver_id=order[0],
-                    sender="系统",
-                    message_type="更新种植环节",
-                    details=json.dumps(transform_schema(SegmentSchema, segment)),
-                    tag=1,
-                )
-
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "更新成功"}
-        )
-
-
-@plant_router.put("/update_plant_plan", summary="更新种植计划")
-async def update_plant_plan(
-    plant_plan_id: int = Body(..., title="种植计划id"),
-    plan_id: Optional[int] = Body(None, title="计划id"),
-    segment_id: Optional[int] = Body(None, title="种植环节id"),
-    operator_id: Optional[int] = Body(None, title="操作人id"),
-    operate_time: Optional[str] = Body(
-        None,
-        title="操作时间",
+@plant_router.post("/upload_file", summary="上传文件")
+async def upload_operation_video(
+    segment_plan_id: int = Form(..., description="种植环节计划id"),
+    operate: Union[int, str] = Form(..., description="操作标识"),
+    operate_field_type: Literal["id", "name"] = Form("id", description="操作字段类型"),
+    image: UploadFile = File(..., description="图片文件"),
+    video: UploadFile = File(..., description="视频文件"),
+    operator_name: Optional[str] = Form(None, description="操作人名称"),
+    operate_time: str = Form(
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        description="操作时间",
         examples=["2021-01-01 12:00:00"],
     ),
-    remark: Optional[str] = Body(None, title="备注"),
-    notify: Optional[bool] = Body(False, title="是否通知客户"),
+    operate_status: Literal["未开始", "进行中", "已完成"] = Form("已完成", description="变更状态"),
+    remarks: Optional[str] = Form(None, description="备注"),
+    notify: bool = Form(False, description="是否通知客户"),
 ):
     """
-    # 更新种植计划
-    - **plant_plan_id**: 种植计划id, int, required
-    - **plan_id**: 计划id, int, optional
-    - **segment_id**: 种植环节id, int, optional
-    - **operator_id**: 操作人id, int, optional
-    - **operate_time**: 操作时间, string, optional
-    - **remark**: 备注, string, optional
+    # 上传操作视频
+    - **segment_plan_id**: 种植环节计划id, int, required
+    - **operate**: 操作步骤标识, string | int, required
+    - **operate_field_type**: 操作字段类型, string, default: id, 可选值：id, name
+    - **image**: 图片文件, file, required
+    - **video**: 视频文件, file, required
+    - **operator_name**: 操作人名称, string, optional
+    - **operate_status**: 变更状态, string, default: 未开始, 可选值：未开始, 进行中, 已完成
+    - **operate_time**: 操作时间, string, required, default: 当前时间
+    - **remarks**: 备注, string, optional
     - **notify**: 是否通知客户, bool, optional, default: False
     """
     with SessionLocal() as db:
-        plant_plan = db.query(PlantPlan).filter(PlantPlan.id == plant_plan_id).first()
-        if not plant_plan:
+        query = (
+            db.query(OperationImplementationInformation)
+            .join(
+                SegmentPlan,
+                OperationImplementationInformation.segment_plan_id == SegmentPlan.id,
+            )
+            .join(
+                PlantOperate,
+                OperationImplementationInformation.operation_id == PlantOperate.id,
+            )
+            .filter(SegmentPlan.id == segment_plan_id)
+        )
+
+        if operate_field_type == "id":
+            query = query.filter(
+                OperationImplementationInformation.operation_id == operate
+            )
+        else:
+            query = db.query(PlantOperate).filter(PlantOperate.name == operate)
+
+        implementation = query.first()
+        if not implementation:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "种植计划不存在"},
+                content={"code": 1, "message": "未查询到操作步骤"},
             )
 
-        if plan_id:
-            plan = db.query(Plan).filter(Plan.id == plan_id).first()
-            if not plan:
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={"code": 1, "message": "计划不存在"},
-                )
-            plant_plan.plan = plan
+        if implementation.image_filename:
+            delete_image(implementation.image_filename)
+        implementation.image_filename = save_upload_image(image)
+        if implementation.video_filename:
+            delete_video(implementation.video_filename)
+        implementation.video_filename = save_video(video)
 
-        if segment_id:
-            segment = db.query(Segment).filter(Segment.id == segment_id).first()
-            if not segment:
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={"code": 1, "message": "种植环节不存在"},
-                )
-            plant_plan.segment = segment
+        implementation.operator = operator_name
+        implementation.operate_time = datetime.strptime(
+            operate_time, "%Y-%m-%d %H:%M:%S"
+        )
+        implementation.status = operate_status
+        implementation.remarks = remarks
 
-        if operator_id:
-            operator = db.query(Client).filter(Client.id == operator_id).first()
-            if not operator:
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={"code": 1, "message": "操作人不存在"},
-                )
-            plant_plan.operator = operator
+        implementation.segment_plan.status = "进行中"
 
-        if operate_time:
-            plant_plan.operation_date = datetime.strptime(
-                operate_time, "%Y-%m-%d %H:%M:%S"
-            )
-
-        if remark:
-            plant_plan.remarks = remark
+        db.add(implementation)
+        db.flush()
+        db.refresh(implementation)
         db.commit()
 
         if notify:
             # 添加消息
             orders = (
                 db.query(Order.client_id)
-                .filter(Order.plan_id == plant_plan.plan_id)
+                .join(Plan, Plan.id == Order.plan_id)
+                .filter(Plan.id == implementation.segment_plan.plan_id)
                 .group_by(Order.client_id)
                 .all()
             )
 
             for order in orders:
                 add_message(
-                    title="更新种植计划",
-                    content=f"种植计划更新成功",
+                    title="田间种植操作视频上传",
+                    content=f"{operator_name}上传了一个操作视频，操作时间：{operate_time}，备注：{remarks}，环节：{implementation.segment_plan.segment.name}，操作：{implementation.operation.name}",
                     receiver_id=order[0],
                     sender="系统",
-                    message_type="更新种植计划",
-                    details=json.dumps(transform_schema(PlantPlanSchema, plant_plan)),
+                    message_type="操作视频上传",
+                    details=json.dumps(
+                        transform_schema(OperationImplementBaseSchema, implementation)
+                    ),
                     tag=1,
                 )
+
         return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "更新成功"}
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "上传成功"},
         )
 
 
 @plant_router.delete("/delete_segment", summary="删除种植环节")
-async def delete_segment(
-    segment_id: int = Body(..., title="环节id"),
-    notify: Optional[bool] = Body(False, title="是否通知客户"),
+async def delete_operation_video(
+    segment: Union[int, str] = Form(..., description="种植环节标识"),
+    segment_field_type: Literal["id", "name"] = Form("id", description="种植环节字段类型"),
 ):
     """
     # 删除种植环节
-    - **segment_id**: 环节id, int, required
-    - **notify**: 是否通知客户, bool, optional, default: False
+    - **segment**: 种植环节标识, string | int, required
+    - **segment_field_type**: 种植环节字段类型, string, default: id, 可选值：id, name
     """
     with SessionLocal() as db:
-        segment = db.query(Segment).filter(Segment.id == segment_id).first()
+        if segment_field_type == "id":
+            segment = db.query(Segment).filter(Segment.id == segment).first()
+        else:
+            segment = db.query(Segment).filter(Segment.name == segment).first()
         if not segment:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "环节不存在"},
+                content={"code": 1, "message": "未查询到种植环节"},
             )
-        if notify:
-            # 添加消息
-            orders = (
-                db.query(Order.client_id)
-                .join(Plan, Order.plan_id == Plan.id)
-                .join(PlantPlan, Plan.id == PlantPlan.plan_id)
-                .filter(PlantPlan.segment_id == segment_id)
-                .group_by(Order.client_id)
-                .all()
+        if segment.plant_segment_plans:
+            names = [plan.segment.name for plan in segment.plant_segment_plans]
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "code": 1,
+                    "message": f"种植计划: [{','.join(names)}]引用了该种植环节，不可删除",
+                },
             )
-
-            for order in orders:
-                add_message(
-                    title="删除种植环节",
-                    content=f"种植环节：{segment.name}删除成功",
-                    receiver_id=order[0],
-                    sender="系统",
-                    message_type="删除种植环节",
-                    details=json.dumps(transform_schema(SegmentSchema, segment)),
-                    tag=1,
-                )
 
         db.delete(segment)
         db.commit()
         return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "删除成功"}
+            status_code=status.HTTP_200_OK,
+            content={"code": 0, "message": "删除成功"},
         )
 
 
-@plant_router.delete("/delete_plant_plan", summary="删除种植计划")
-async def delete_plant_plan(
-    plant_plan_id: int = Body(..., title="种植计划id"),
-    notify: Optional[bool] = Body(False, title="是否通知客户"),
+@plant_router.delete("/delete_segment_plan", summary="删除种植环节计划")
+async def delete_segment_plan(
+    segment_plan_id: int = Query(..., title="种植环节计划id"),
+    notify: bool = Query(False, title="是否通知客户"),
 ):
     """
-    # 删除种植计划
-    - **plant_plan_id**: 种植计划id, int, required
+    # 删除种植环节计划
+    - **segment_plan_id**: 种植环节计划id, int, required
     - **notify**: 是否通知客户, bool, optional, default: False
     """
     with SessionLocal() as db:
-        plant_plan = db.query(PlantPlan).filter(PlantPlan.id == plant_plan_id).first()
-        if not plant_plan:
+        segment_plan = (
+            db.query(SegmentPlan).filter(SegmentPlan.id == segment_plan_id).first()
+        )
+        if not segment_plan:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "种植计划不存在"},
+                content={"code": 1, "message": "未查询到种植环节计划"},
             )
+        for implementation in segment_plan.implementations:
+            if implementation.image_filename:
+                delete_image(implementation.image_filename)
+            if implementation.video_filename:
+                delete_video(implementation.video_filename)
+            db.delete(implementation)
+
         if notify:
             # 添加消息
             orders = (
                 db.query(Order.client_id)
-                .filter(Order.plan_id == plant_plan.plan_id)
+                .join(Plan, Plan.id == Order.plan_id)
+                .filter(Plan.id == segment_plan.plan_id)
                 .group_by(Order.client_id)
                 .all()
             )
 
             for order in orders:
                 add_message(
-                    title="删除种植计划",
-                    content=f"种植计划删除成功",
+                    title="删除种植环节计划",
+                    content=f"种植环节计划：{segment_plan.segment.name}已被删除",
                     receiver_id=order[0],
                     sender="系统",
-                    message_type="删除种植计划",
-                    details=json.dumps(transform_schema(PlantPlanSchema, plant_plan)),
-                    tag=1,
-                )
-
-        db.delete(plant_plan)
-        db.commit()
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "删除成功"}
-        )
-
-
-@plant_router.post("/upload_file", summary="上传文件")
-async def upload_file(
-    segment_id: int = Form(..., title="种植环节id"),
-    file: UploadFile = File(..., title="图片文件"),
-    file_type: Literal["image", "video"] = Form("image", title="文件类型"),
-    filename: Optional[str] = Form(None, title="文件名"),
-    notify: Optional[bool] = Form(False, title="是否通知客户"),
-):
-    """
-    # 上传文件
-    - **segment_id**: 种植环节id, int, required
-    - **file**: 图片文件, file, required
-    - **file_type**: 文件类型, string, optional, default: image, 可选值：image, video
-    - **filename**: 文件名, string, optional
-    - **notify**: 是否通知客户, bool, optional, default: False
-    """
-    with SessionLocal() as db:
-        segment = db.query(Segment).filter(Segment.id == segment_id).first()
-        if not segment:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "环节不存在"},
-            )
-        if not filename:
-            name = file.filename
-        else:
-            name = filename
-
-        if file_type == "image":
-            filename = save_upload_image(file)
-        else:
-            filename = save_video(file)
-
-        segment_file = SegmentFile(
-            name=name,
-            filename=filename,
-            type=file_type,
-        )
-        segment_file.segment = segment
-        db.add(segment_file)
-        db.commit()
-        if notify:
-            # 添加消息
-            orders = (
-                db.query(Order.client_id)
-                .join(Plan, Order.plan_id == Plan.id)
-                .join(PlantPlan, Plan.id == PlantPlan.plan_id)
-                .filter(PlantPlan.segment_id == segment_id)
-                .group_by(Order.client_id)
-                .all()
-            )
-
-            for order in orders:
-                add_message(
-                    title="上传文件",
-                    content=f"种植环节：{segment.name}更新了一个文件，文件名：{name}，文件类型：{file_type}",
-                    receiver_id=order[0],
-                    sender="系统",
-                    message_type="种植环节上传文件",
+                    message_type="删除种植环节计划",
                     details=json.dumps(
-                        transform_schema(SegmentFileSchema, segment_file)
+                        transform_schema(SegmentPlanSchema, segment_plan)
                     ),
                     tag=1,
                 )
+
+        db.delete(segment_plan)
+        db.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={
-                "code": 0,
-                "message": "上传成功",
-                "data": [
-                    {
-                        "filename": filename,
-                        "original_filename": name,
-                    }
-                ],
-            },
-        )
-
-
-@plant_router.delete("/delete_file", summary="删除文件")
-async def delete_file(
-    file_id: int = Body(..., title="文件id"),
-    notify: Optional[bool] = Body(False, title="是否通知客户"),
-):
-    """
-    # 删除文件
-    - **file_id**: 文件id, int, required
-    - **notify**: 是否通知客户, bool, optional, default: False
-    """
-    with SessionLocal() as db:
-        segment_file = db.query(SegmentFile).filter(SegmentFile.id == file_id).first()
-        if not segment_file:
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "文件不存在"},
-            )
-        if notify:
-            # 添加消息
-            orders = (
-                db.query(Order.client_id)
-                .join(Plan, Order.plan_id == Plan.id)
-                .join(PlantPlan, Plan.id == PlantPlan.plan_id)
-                .filter(PlantPlan.segment_id == segment_file.segment_id)
-                .group_by(Order.client_id)
-                .all()
-            )
-
-            for order in orders:
-                add_message(
-                    title="删除文件",
-                    content=f"种植环节：{segment_file.segment.name}删除了一个文件，文件名：{segment_file.name}，文件类型：{segment_file.type}",
-                    receiver_id=order[0],
-                    sender="系统",
-                    message_type="种植环节删除文件",
-                    details=json.dumps(
-                        transform_schema(SegmentFileSchema, segment_file)
-                    ),
-                    tag=1,
-                )
-        if segment_file.type == "image":
-            delete_image(segment_file.filename)
-        else:
-            delete_video(segment_file.filename)
-        db.delete(segment_file)
-        db.commit()
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"code": 0, "message": "删除成功"}
+            content={"code": 0, "message": "删除成功"},
         )

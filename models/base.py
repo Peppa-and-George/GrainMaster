@@ -255,7 +255,7 @@ class SegmentBaseSchema(BaseModel):
 
 class SegmentSchema(SegmentBaseSchema):
     operations: Optional[List["OperationBaseSchema"]] = Field(
-        description="操作信息", default=[]
+        description="操作步骤信息", default=[]
     )
     plant_segment_plans: Optional[List["SegmentPlanBaseSchema"]] = Field(
         description="种植环节计划信息", default=[]
@@ -263,6 +263,7 @@ class SegmentSchema(SegmentBaseSchema):
 
 
 class SegmentPlanBaseSchema(BaseModel):
+    id: int = Field(description="种植环节计划ID")
     plan_id: int = Field(description="计划ID")
     segment_id: Optional[int] = Field(description="种植ID")
     operator_id: Optional[int] = Field(description="操作人ID")

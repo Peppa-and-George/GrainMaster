@@ -26,8 +26,6 @@ from schema.tables import (
 )
 from schema.common import (
     page_with_order,
-    query_with_order,
-    query_with_page,
     transform_schema,
 )
 from schema.database import SessionLocal
@@ -397,7 +395,7 @@ async def upload_operation_video(
     notify: bool = Form(False, description="是否通知客户"),
 ):
     """
-    # 上传操作视频
+    # 上传操作文件
     - **segment_plan_id**: 种植环节计划id, int, required
     - **operate**: 操作步骤标识, string | int, required
     - **operate_field_type**: 操作字段类型, string, default: id, 可选值：id, name
@@ -484,6 +482,158 @@ async def upload_operation_video(
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"code": 0, "message": "上传成功"},
+        )
+
+
+@plant_router.put("/update_segment_plan", summary="更新种植环节计划")
+async def update_segment_plan(
+    segment_plan_id: int = Body(..., description="种植环节计划id"),
+    operator: Union[int, str] = Body(None, description="操作人标识"),
+    operator_field_type: Literal["id", "name", "phone_number"] = Body(
+        "id", description="操作人字段类型"
+    ),
+    operate_time: Optional[str] = Body(
+        None, description="操作时间", examples=["2021-01-01 12:00:00"]
+    ),
+    remarks: Optional[str] = Body(None, description="备注"),
+    plan_status: Optional[Literal["未开始", "进行中", "已完成"]] = Body(None, description="状态"),
+    notify: bool = Body(False, description="是否通知客户"),
+):
+    """
+    # 更新种植环节计划
+    - **segment_plan_id**: 种植环节计划id, int, required
+    - **operate_time**: 操作时间, string, optional
+    - **remarks**: 备注, string, optional
+    - **plan_status**: 状态, string, optional
+    - **notify**: 是否通知客户, bool, optional, default: False
+    """
+    with SessionLocal() as db:
+        segment_plan = (
+            db.query(SegmentPlan).filter(SegmentPlan.id == segment_plan_id).first()
+        )
+        if not segment_plan:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "未查询到种植环节计划"},
+            )
+
+        if operate_time:
+            segment_plan.operate_time = datetime.strptime(
+                operate_time, "%Y-%m-%d %H:%M:%S"
+            )
+        if remarks:
+            segment_plan.remarks = remarks
+        if status:
+            segment_plan.status = plan_status
+        if operator:
+            if operator_field_type == "id":
+                operator = db.query(Client).filter(Client.id == operator).first()
+            elif operator_field_type == "name":
+                operator = db.query(Client).filter(Client.name == operator).first()
+            else:
+                operator = (
+                    db.query(Client).filter(Client.phone_number == operator).first()
+                )
+            if not operator:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"code": 1, "message": "未查询到操作人"},
+                )
+            segment_plan.operator = operator
+
+        db.commit()
+
+        if notify:
+            # 添加消息
+            orders = (
+                db.query(Order.client_id)
+                .join(Plan, Plan.id == Order.plan_id)
+                .filter(Plan.id == segment_plan.plan_id)
+                .group_by(Order.client_id)
+                .all()
+            )
+
+            for order in orders:
+                add_message(
+                    title="更新种植环节计划",
+                    content=f"种植环节计划：{segment_plan.segment.name}已被更新",
+                    receiver_id=order[0],
+                    sender="系统",
+                    message_type="更新种植环节计划",
+                    details=json.dumps(
+                        transform_schema(SegmentPlanSchema, segment_plan)
+                    ),
+                    tag=1,
+                )
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "code": 0,
+                "message": "更新成功",
+                "data": transform_schema(SegmentPlanSchema, segment_plan),
+            },
+        )
+
+
+@plant_router.put("/update_segment", summary="更新种植环节")
+async def update_segment(
+    segment: Union[int, str] = Body(..., description="种植环节标识"),
+    segment_field_type: Literal["id", "name"] = Body("id", description="种植环节字段类型"),
+    name: Optional[str] = Body(None, description="环节名称"),
+    notify: bool = Body(False, description="是否通知客户"),
+):
+    """
+    # 更新种植环节
+    - **segment**: 种植环节标识, string | int, required
+    - **segment_field_type**: 种植环节字段类型, string, default: id, 可选值：id, name
+    - **name**: 环节名称, string, optional
+    """
+    with SessionLocal() as db:
+        if segment_field_type == "id":
+            segment = db.query(Segment).filter(Segment.id == segment).first()
+        else:
+            segment = db.query(Segment).filter(Segment.name == segment).first()
+        if not segment:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"code": 1, "message": "未查询到种植环节"},
+            )
+
+        if name:
+            segment.name = name
+
+        db.commit()
+
+        if notify:
+            # 添加消息
+            orders = (
+                db.query(Order.client_id)
+                .join(Plan, Plan.id == Order.plan_id)
+                .join(SegmentPlan, Plan.id == SegmentPlan.plan_id)
+                .join(Segment, SegmentPlan.segment_id == Segment.id)
+                .filter(Segment.id == segment.id)
+                .group_by(Order.client_id)
+                .all()
+            )
+
+            for order in orders:
+                add_message(
+                    title="更新种植环节",
+                    content=f"种植环节：{segment.name}已被更新",
+                    receiver_id=order[0],
+                    sender="系统",
+                    message_type="更新种植环节",
+                    details=json.dumps(transform_schema(SegmentSchema, segment)),
+                    tag=1,
+                )
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "code": 0,
+                "message": "更新成功",
+                "data": transform_schema(SegmentSchema, segment),
+            },
         )
 
 

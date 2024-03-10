@@ -292,7 +292,7 @@ class SegmentPlanSchema(SegmentPlanBaseSchema):
     )
     plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
     operator: Optional[ClientBaseSchema] = Field(description="操作人信息", default={})
-    implementations: Optional[List["OperationImplementBaseSchema"]] = Field(
+    implementations: Optional[List["OperationImplementSchemaWithOperation"]] = Field(
         description="操作实施信息", default=[]
     )
 
@@ -342,6 +342,10 @@ class OperationImplementSchema(OperationImplementBaseSchema):
     segment_plan: Optional[SegmentPlanBaseSchema] = Field(
         description="种植环节计划", default={}
     )
+
+
+class OperationImplementSchemaWithOperation(OperationImplementBaseSchema):
+    operation: Optional[OperationBaseSchema] = Field(description="操作信息", default={})
 
 
 class TransportBaseSchema(BaseModel):

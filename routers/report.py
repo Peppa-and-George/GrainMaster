@@ -144,7 +144,8 @@ async def update_quality(
                 content={"code": 1, "message": "质检记录不存在"},
             )
         if file:
-            delete_report(quality.report)
+            if quality.report:
+                delete_report(quality.report)
             filename = save_report(file)
             quality.report = filename
             quality.status = "已上传"

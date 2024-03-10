@@ -113,8 +113,9 @@ async def get_orders(
         with SessionLocal() as db:
             query = (
                 db.query(Order)
-                .join(Plan, Order.plan_id == Plan.id)
-                .join(Client, Order.client_id == Client.id)
+                .outerjoin(Plan, Order.plan_id == Plan.id)
+                .outerjoin(Client, Order.client_id == Client.id)
+                .outerjoin(Location, Plan.location_id == Location.id)
             )
             if year:
                 query = query.filter(Plan.year == year)
@@ -135,15 +136,7 @@ async def get_orders(
             if client_type:
                 query = query.filter(Client.type == client_type)
             if location_name:
-                location = (
-                    db.query(Location).filter(Location.name == location_name).first()
-                )
-                if not location:
-                    return JSONResponse(
-                        status_code=status.HTTP_200_OK,
-                        content={"code": 1, "msg": "基地不存在"},
-                    )
-                query = query.filter(Plan.location == location.id)
+                query = query.filter(Location.name == location_name)
 
             response = page_with_order(
                 schema=OrderSchema,

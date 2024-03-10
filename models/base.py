@@ -784,7 +784,7 @@ class TodoListBaseSchema(BaseModel):
     content: Optional[str] = Field(description="待办事项内容")
     status: Optional[bool] = Field(description="是否已完成")
     complete_time: Optional[datetime] = Field(description="完成时间")
-    sender: Optional[str] = Field(description="发送者")
+    sender_id: Optional[int] = Field(description="发送者(客户)ID")
     read: Optional[bool] = Field(description="是否已读")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")
@@ -797,4 +797,4 @@ class TodoListBaseSchema(BaseModel):
 
 
 class TodoListSchema(TodoListBaseSchema):
-    pass
+    sender: Optional[ClientBaseSchema] = Field(description="发送者信息", default={})

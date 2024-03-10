@@ -255,6 +255,9 @@ class Client(Base):
     plant_segment_plans: Mapped[List["SegmentPlan"]] = relationship(
         "SegmentPlan", back_populates="operator"
     )
+    todo_lists: Mapped[List["TodoList"]] = relationship(
+        "TodoList", back_populates="sender"
+    )
 
 
 class ClientPrivilege(Base):
@@ -1173,8 +1176,9 @@ class TodoList(Base):
     content = Column(Text, comment="内容", name="content")
     status = Column(Boolean, comment="是否完成", name="status", default=False)
     complete_time = Column(DateTime, comment="完成时间", name="complete_time")
-    sender = Column(String(16), comment="发送人", name="sender")
+    sender_id = Column(ForeignKey("client.id"), comment="发送人", name="sender")
     read = Column(Boolean, comment="是否已读", name="read", default=False)
+    tag = Column(Integer, comment="消息标签", name="tag")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )
@@ -1184,4 +1188,8 @@ class TodoList(Base):
         onupdate=datetime.now,
         comment="更新时间",
         name="update_time",
+    )
+
+    sender: Mapped["Client"] = relationship(
+        "Client", back_populates="todo_lists", foreign_keys=[sender_id]
     )

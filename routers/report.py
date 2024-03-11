@@ -8,7 +8,7 @@ from dependency.report import save_report, delete_report
 from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
 from schema.tables import Quality, Plan, Location, Warehouse, Transport
-from models.base import QualitySchema
+from models.base import QualitySchema, QualitySchemaWithLocation
 from auth import get_user_by_request
 
 report_router = APIRouter()
@@ -52,12 +52,12 @@ async def filter_quality_api(
             location = db.query(Location).filter(Location.name == location_name).first()
             query = query.filter(Plan.location_id == location.id)
         if report_status:
-            query = query.filter(Quality.report_status == report_status)
+            query = query.filter(Quality.status == report_status)
         if report_type:
             query = query.filter(Quality.type == report_type)
 
         response = page_with_order(
-            schema=QualitySchema,
+            schema=QualitySchemaWithLocation,
             query=query,
             order_field=order_field,
             order=order_desc,

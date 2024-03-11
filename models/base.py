@@ -142,6 +142,10 @@ class PlanSchema(PlanBaseSchema):
     location: Optional[LocationBaseSchema] = Field(description="基地信息", default={})
 
 
+class PlanSchemaWithLocation(PlanBaseSchema):
+    location: Optional[LocationBaseSchema] = Field(description="基地信息", default={})
+
+
 class AddressBaseSchema(BaseModel):
     id: int = Field(description="地址id")
     client_id: Optional[int] = Field(description="客户id")
@@ -542,6 +546,13 @@ class QualitySchema(QualityBaseSchema):
     plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
     warehouse: Optional[WarehouseBaseSchema] = Field(description="仓储加工信息", default={})
     transport: Optional[TransportBaseSchema] = Field(description="运输信息", default={})
+
+
+class QualitySchemaWithLocation(QualityBaseSchema):
+    plan: Optional[PlanSchemaWithLocation] = Field(description="计划信息", default={})
+    warehouse: Optional[WarehouseBaseSchema] = Field(description="仓储加工信息", default={})
+    transport: Optional[TransportBaseSchema] = Field(description="运输信息", default={})
+    location: Optional[LocationBaseSchema] = Field(description="地址信息", default={})
 
 
 class BannerBaseSchema(BaseModel):

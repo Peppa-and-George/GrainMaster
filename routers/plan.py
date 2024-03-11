@@ -86,7 +86,7 @@ async def filter_plan(
     page_size: int = Query(10, description="每页数量"),
 ):
     with SessionLocal() as db:
-        query = db.query(Plan).join(Location, Plan.location_id == Location.id)
+        query = db.query(Plan).outerjoin(Location, Plan.location_id == Location.id)
         if location:
             query = query.filter(Location.name == location)
         if customized:

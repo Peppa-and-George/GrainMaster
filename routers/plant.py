@@ -378,12 +378,12 @@ async def add_segment(
 
 
 @plant_router.post("/upload_file", summary="上传文件")
-async def upload_operation_video(
+async def upload_file(
     segment_plan_id: int = Form(..., description="种植环节计划id"),
     operate: Union[int, str] = Form(..., description="操作标识"),
     operate_field_type: Literal["id", "name"] = Form("id", description="操作字段类型"),
-    image: UploadFile = File(..., description="图片文件"),
-    video: UploadFile = File(..., description="视频文件"),
+    image: Optional[UploadFile] = File(..., description="图片文件"),
+    video: Optional[UploadFile] = File(..., description="视频文件"),
     operator_name: Optional[str] = Form(None, description="操作人名称"),
     operate_time: str = Form(
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -434,13 +434,14 @@ async def upload_operation_video(
                 status_code=status.HTTP_200_OK,
                 content={"code": 1, "message": "未查询到操作步骤"},
             )
-
-        if implementation.image_filename:
-            delete_image(implementation.image_filename)
-        implementation.image_filename = save_upload_image(image)
-        if implementation.video_filename:
-            delete_video(implementation.video_filename)
-        implementation.video_filename = save_video(video)
+        if image:
+            if implementation.image_filename:
+                delete_image(implementation.image_filename)
+            implementation.image_filename = save_upload_image(image)
+        if video:
+            if implementation.video_filename:
+                delete_video(implementation.video_filename)
+            implementation.video_filename = save_video(video)
 
         implementation.operator = operator_name
         implementation.operate_time = datetime.strptime(

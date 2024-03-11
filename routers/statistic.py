@@ -10,6 +10,7 @@ from schema.tables import (
     Location,
     Order,
     Plan,
+    Traceability,
 )
 from schema.database import SessionLocal
 
@@ -159,5 +160,29 @@ async def get_material_info_api():
             "data": {
                 "total_material": total_material,
                 "total_product": total_product,
+            },
+        }
+
+
+@statistic_router.get("/get_traceability_info", summary="获取溯源信息")
+async def get_traceability_info_api():
+    """
+    # 获取溯源信息
+    """
+    with SessionLocal() as db:
+        total = db.query(func.count(Traceability.id)).scalar()
+        used = (
+            db.query(func.count(Traceability.id))
+            .filter(Traceability.used == True)
+            .scalar()
+        )
+        unused = total - used
+        return {
+            "code": 0,
+            "message": "success",
+            "data": {
+                "total": total,
+                "used": used,
+                "unused": unused,
             },
         }

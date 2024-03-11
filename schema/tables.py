@@ -668,7 +668,14 @@ class Transport(Base):
     )
     remark = Column(Text, comment="备注", name="remark")
     status = Column(String(50), comment="状态", name="status", default="准备运输")
-
+    driver = Column(String(32), comment="司机", name="driver")
+    vehicle = Column(String(32), comment="运输车辆", name="vehicle")
+    load_place = Column(String(32), comment="装载地点", name="load_place")
+    unload_place = Column(String(32), comment="卸载地点", name="unload_place")
+    weight = Column(Float, comment="重量", name="weight")
+    unit: Literal["千克", "吨"] = Column(
+        Enum("千克", "吨"), comment="单位", name="unit", default="千克"
+    )
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )

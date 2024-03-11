@@ -195,6 +195,12 @@ async def add_transport_api(
         description="操作时间",
         examples=["2021-01-01 00:00:00"],
     ),
+    driver: Optional[str] = Body("", description="司机"),
+    vehicle: Optional[str] = Body("", description="车辆"),
+    load_place: Optional[str] = Body("", description="装车地点"),
+    unload_place: Optional[str] = Body("", description="卸货地点"),
+    weight: Optional[float] = Body(0, description="重量"),
+    unit: Literal["吨", "千克"] = Body("千克", description="重量单位"),
     remark: Optional[str] = Body("", description="备注"),
     notify: bool = Body(False, description="是否通知客户"),
 ):
@@ -203,6 +209,12 @@ async def add_transport_api(
     ## params
     - **plan_id**: 计划ID, int
     - **operate_date**: 操作时间, str, 格式为"2021-01-01 00:00:00"
+    - **driver**: 司机, str, 可选
+    - **vehicle**: 车辆, str, 可选
+    - **load_place**: 装车地点, str, 可选
+    - **unload_place**: 卸货地点, str, 可选
+    - **weight**: 重量, float, 可选
+    - **unit**: 重量单位, 枚举类型, 可选值: "吨", "千克"
     - **remark**: 备注, str, 可选
     - **notify**: 是否通知客户, bool, 可选
     """
@@ -218,6 +230,12 @@ async def add_transport_api(
                 operate_time=datetime.strptime(operate_time, "%Y-%m-%d %H:%M:%S"),
                 remark=remark,
                 status="准备运输",
+                driver=driver,
+                vehicle=vehicle,
+                load_place=load_place,
+                unload_place=unload_place,
+                weight=weight,
+                unit=unit,
             )
 
             quality = Quality(type="原料运输", status="未上传", name="原料运输质检报告")
@@ -572,6 +590,12 @@ async def update_transport_api(
     operate_time: Optional[str] = Body(
         None, description="操作时间", examples=["2021-01-01 00:00:00"]
     ),
+    vehicle: Optional[str] = Body(None, description="车辆"),
+    driver: Optional[str] = Body(None, description="司机"),
+    load_place: Optional[str] = Body(None, description="装车地点"),
+    unload_place: Optional[str] = Body(None, description="卸货地点"),
+    weight: Optional[float] = Body(None, description="重量"),
+    unit: Optional[Literal["吨", "千克"]] = Body(None, description="重量单位"),
     remark: Optional[str] = Body(None, description="备注"),
     notify: bool = Body(False, description="是否通知客户"),
 ):
@@ -606,6 +630,19 @@ async def update_transport_api(
                 )
             if remark:
                 transport.remark = remark
+            if vehicle:
+                transport.vehicle = vehicle
+            if driver:
+                transport.driver = driver
+            if load_place:
+                transport.load_place = load_place
+            if unload_place:
+                transport.unload_place = unload_place
+            if weight:
+                transport.weight = weight
+            if unit:
+                transport.unit = unit
+
             db.commit()
             if notify:
                 orders = (

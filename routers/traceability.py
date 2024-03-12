@@ -165,6 +165,7 @@ async def get_traceability_detail(
                     content={"code": 1, "message": "溯源码不存在"},
                 )
             obj.used = True
+            obj.scan_number += 1
             obj.used_time = datetime.now()
             db.commit()
             plan = db.query(Plan).filter(Plan.id == obj.plan_id).first()

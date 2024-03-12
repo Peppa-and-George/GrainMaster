@@ -1,17 +1,16 @@
 import io
 import uuid
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 
 import qrcode
 
 from fastapi.routing import APIRouter
-from fastapi import Query, status, HTTPException, Body
+from fastapi import Query, status, HTTPException, Body, Depends
 from fastapi.responses import JSONResponse, Response
 
 from models.base import (
     LocationSchema,
-    SegmentPlanSchema,
     TransportSchema,
     WarehouseSchema,
     LogisticsPlanSchema,
@@ -31,6 +30,7 @@ from schema.common import query_with_page, query_with_order, transform_schema
 from config import BASE_URL
 
 traceability_router = APIRouter()
+detail_router = APIRouter()
 
 
 def datetime_to_str(obj):
@@ -39,13 +39,16 @@ def datetime_to_str(obj):
     return None
 
 
-@traceability_router.get("/get_traceability", summary="批量获取溯源信息")
+@traceability_router.get(
+    "/get_traceability",
+    summary="批量获取溯源信息",
+)
 async def get_traceability(
     plan_id: Optional[int] = Query(None, description="计划id"),
     year: Optional[int] = Query(None, description="年份"),
     batch: Optional[int] = Query(None, description="批次"),
-    location: Optional[str] = Query(None, description="基地名称"),
-    location_id: Optional[int] = Query(None, description="基地id"),
+    location: Union[str, int, None] = Query(None, description="基地名称"),
+    location_field_type: Literal["id", "name"] = Query("name", description="基地字段类型"),
     order_field: str = Query("id", description="排序字段"),
     order: Literal["asc", "desc"] = Query("desc", description="排序方式"),
     page: int = Query(1, description="页码"),
@@ -57,7 +60,7 @@ async def get_traceability(
     - **year**: 年份, 可选
     - **batch**: 批次, 可选
     - **location**: 基地名称, 可选
-    - **location_id**: 基地id, 可选
+    - **location_field_type**: 基地字段类型, id: 基地id, name: 基地名称, 默认为name, 可选
     - **order_field**: 排序字段, 默认为"id", 可选
     - **order**: 排序方式, 默认为"desc", 可选
     - **page**: 页码, 默认为1, 可选
@@ -77,9 +80,10 @@ async def get_traceability(
             if batch:
                 query = query.filter(Plan.batch == batch)
             if location:
-                query = query.filter(Location.name == location)
-            if location_id:
-                query = query.filter(Location.id == location_id)
+                if location_field_type == "id":
+                    query = query.filter(Location.id == location)
+                else:
+                    query = query.filter(Location.name == location)
 
             # 分页
             total = query.count()
@@ -103,6 +107,7 @@ async def get_traceability(
                         "url": url,
                         "print_status": item.print_status,
                         "used_time": datetime_to_str(item.used_time),
+                        "scan_number": item.scan_number,
                         "used": item.used,
                         "created_time": datetime_to_str(item.create_time),
                         "updated_time": datetime_to_str(item.update_time),
@@ -129,7 +134,7 @@ async def get_traceability(
         )
 
 
-@traceability_router.get("/detail", summary="获取溯源详情")
+@detail_router.get("/traceability/detail", summary="获取溯源详情")
 async def get_traceability_detail(
     traceability: str = Query(..., description="溯源码标识"),
     field_type: Literal["id", "code"] = Query("code", description="字段类型"),
@@ -188,6 +193,7 @@ async def get_traceability_detail(
                 "print_status": obj.print_status,
                 "used_time": datetime_to_str(obj.used_time),
                 "used": obj.used,
+                "scan_number": obj.scan_number,
                 "created_time": datetime_to_str(obj.create_time),
                 "updated_time": datetime_to_str(obj.update_time),
                 "location": transform_schema(LocationSchema, location)[0],
@@ -242,7 +248,10 @@ def get_qrcode(
     )
 
 
-@traceability_router.delete("/delete_traceability", summary="删除溯源信息")
+@traceability_router.delete(
+    "/delete_traceability",
+    summary="删除溯源信息",
+)
 async def delete_traceability(
     traceability: str = Query(..., description="溯源码标识"),
     field_type: Literal["id", "code"] = Query("code", description="字段类型"),
@@ -283,7 +292,10 @@ async def delete_traceability(
         )
 
 
-@traceability_router.post("add_traceability", summary="添加溯源信息")
+@traceability_router.post(
+    "add_traceability",
+    summary="添加溯源信息",
+)
 async def add_traceability(
     plan_id: int = Body(..., description="计划id"),
 ):
@@ -321,7 +333,10 @@ async def add_traceability(
         )
 
 
-@traceability_router.put("/update_traceability", summary="修改溯源信息")
+@traceability_router.put(
+    "/update_traceability",
+    summary="修改溯源信息",
+)
 async def update_traceability(
     traceability: str = Body(..., description="溯源码标识"),
     field_type: Literal["id", "code"] = Body("code", description="字段类型"),

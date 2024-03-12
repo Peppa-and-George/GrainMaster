@@ -15,6 +15,7 @@ from models.base import (
     WarehouseSchema,
     LogisticsPlanSchema,
     PlanSchema,
+    SegmentPlanSchema,
 )
 from schema.database import SessionLocal
 from schema.tables import (
@@ -198,7 +199,7 @@ async def get_traceability_detail(
                 "updated_time": datetime_to_str(obj.update_time),
                 "location": transform_schema(LocationSchema, location)[0],
                 "plan": transform_schema(PlanSchema, plan)[0],
-                "plants": transform_schema(SegmentPlan, plants),
+                "plants": transform_schema(SegmentPlanSchema, plants),
                 "transports": transform_schema(TransportSchema, transports),
                 "warehouses": transform_schema(WarehouseSchema, warehouses),
                 "logistics": transform_schema(LogisticsPlanSchema, logistics),

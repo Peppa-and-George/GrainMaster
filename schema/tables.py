@@ -996,6 +996,9 @@ class Traceability(Base):
         String(64), comment="溯源码", name="traceability_code", unique=True
     )
     used = Column(Boolean, comment="是否使用", name="used", default=False)
+    scan_number = Column(
+        Integer, comment="扫码次数", name="scan_number", default=0, nullable=True
+    )
     used_time = Column(DateTime, comment="使用时间", name="used_time")
     print_status = Column(Boolean, comment="打印状态", name="print_status", default=False)
     create_time = Column(

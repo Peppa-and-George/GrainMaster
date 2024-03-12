@@ -31,6 +31,7 @@ from routers.invite import invite_router
 from routers.apply import apply_router
 from routers.message import message_router
 from routers.todo_list import todo_list_router
+from routers.traceability import detail_router
 from journal import log
 from auth import (
     jwt,
@@ -161,6 +162,12 @@ app.include_router(
     tags=["溯源管理"],
     prefix="/traceability",
     dependencies=[Depends(oauth2_scheme)],
+)
+
+app.include_router(
+    detail_router,
+    tags=["溯源详情"],
+    prefix="/traceability",
 )
 
 app.include_router(

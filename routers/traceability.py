@@ -237,7 +237,7 @@ def get_qrcode(
                 db.query(Traceability).filter(Traceability.id == traceability).first()
             ).traceability_code
     img = qrcode.make(
-        f"{BASE_URL}/traceability/detail?traceability={traceability_code}&field_type={field_type}"
+        f"{BASE_URL}/traceability/detail?traceability={traceability_code}&field_type=code"
     )
     img = img.resize((size, size))
 

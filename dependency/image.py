@@ -47,6 +47,10 @@ def save_upload_image(image: UploadFile):
     :param image: 上传的图片
     :return:
     """
+    # 判断文件类型
+    assert (image.content_type == "image/png") or (
+        image.content_type == "image/jpeg"
+    ), HTTPException(status_code=400, detail="图片格式错误, 仅支持png和jpeg")
     image_hash = uuid.uuid4().hex
     filename = f"{image_hash}{os.path.splitext(image.filename)[-1]}"
     with open(f"{IMAGES_DER}/{filename}", "wb") as f:

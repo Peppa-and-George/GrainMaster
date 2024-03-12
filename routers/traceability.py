@@ -135,7 +135,7 @@ async def get_traceability(
         )
 
 
-@detail_router.get("/traceability/detail", summary="获取溯源详情")
+@detail_router.get("/detail", summary="获取溯源详情")
 async def get_traceability_detail(
     traceability: str = Query(..., description="溯源码标识"),
     field_type: Literal["id", "code"] = Query("code", description="字段类型"),

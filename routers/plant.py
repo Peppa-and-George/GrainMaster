@@ -382,8 +382,11 @@ async def upload_file(
     segment_plan_id: int = Form(..., description="种植环节计划id"),
     operate: Union[int, str] = Form(..., description="操作标识"),
     operate_field_type: Literal["id", "name"] = Form("id", description="操作字段类型"),
-    image: Optional[UploadFile] = File(..., description="图片文件"),
-    video: Optional[UploadFile] = File(..., description="视频文件"),
+    image: Optional[UploadFile] = File(
+        None,
+        description="图片文件",
+    ),
+    video: Optional[UploadFile] = File(None, description="视频文件"),
     operator_name: Optional[str] = Form(None, description="操作人名称"),
     operate_time: str = Form(
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -426,13 +429,13 @@ async def upload_file(
                 OperationImplementationInformation.operation_id == operate
             )
         else:
-            query = db.query(PlantOperate).filter(PlantOperate.name == operate)
+            query = query.filter(PlantOperate.name == operate)
 
         implementation = query.first()
         if not implementation:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
-                content={"code": 1, "message": "未查询到操作步骤"},
+                content={"code": 1, "message": "未查询到操作实施步骤"},
             )
         if image:
             if implementation.image_filename:
@@ -452,7 +455,6 @@ async def upload_file(
 
         implementation.segment_plan.status = "进行中"
 
-        db.add(implementation)
         db.flush()
         db.refresh(implementation)
         db.commit()

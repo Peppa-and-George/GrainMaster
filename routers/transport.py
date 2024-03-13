@@ -191,24 +191,24 @@ async def get_transport_segment_api(
 async def add_transport_api(
     plan_id: int = Body(..., description="计划ID", examples=[1]),
     operate_time: str = Body(
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        default=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         description="操作时间",
-        examples=["2021-01-01 00:00:00"],
+        examples=[datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
     ),
-    driver: Optional[str] = Body("", description="司机"),
-    vehicle: Optional[str] = Body("", description="车辆"),
-    load_place: Optional[str] = Body("", description="装车地点"),
-    unload_place: Optional[str] = Body("", description="卸货地点"),
+    driver: Optional[str] = Body(None, description="司机"),
+    vehicle: Optional[str] = Body(None, description="车辆"),
+    load_place: Optional[str] = Body(None, description="装车地点"),
+    unload_place: Optional[str] = Body(None, description="卸货地点"),
     weight: Optional[float] = Body(0, description="重量"),
     unit: Literal["吨", "千克"] = Body("千克", description="重量单位"),
-    remark: Optional[str] = Body("", description="备注"),
+    remark: Optional[str] = Body(None, description="备注"),
     notify: bool = Body(False, description="是否通知客户"),
 ):
     """
     # 添加运输信息
     ## params
     - **plan_id**: 计划ID, int
-    - **operate_date**: 操作时间, str, 格式为"2021-01-01 00:00:00"
+    - **operate_time**: 操作时间, str, 格式为"2021-01-01 00:00:00"
     - **driver**: 司机, str, 可选
     - **vehicle**: 车辆, str, 可选
     - **load_place**: 装车地点, str, 可选

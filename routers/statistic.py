@@ -23,7 +23,12 @@ async def statistic_clients_info_api():
     # 统计客户信息
     """
     with SessionLocal() as db:
-        res = db.query(Client.type, func.count(Client.id)).group_by(Client.type).all()
+        res = (
+            db.query(Client.type, func.count(Client.id))
+            .filter(Client.is_deleted == False)
+            .group_by(Client.type)
+            .all()
+        )
         total = db.query(func.count(Client.id)).scalar()
         if total == 0:
             return {

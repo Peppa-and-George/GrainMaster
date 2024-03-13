@@ -45,6 +45,8 @@ def datetime_to_str(obj):
     summary="批量获取溯源信息",
 )
 async def get_traceability(
+    traceability: str = Query(..., description="溯源码标识"),
+    traceability_field_type: Literal["id", "code"] = Query("code", description="字段类型"),
     plan_id: Optional[int] = Query(None, description="计划id"),
     year: Optional[int] = Query(None, description="年份"),
     batch: Optional[int] = Query(None, description="批次"),
@@ -57,6 +59,8 @@ async def get_traceability(
 ):
     """
     # 批量获取溯源信息
+    - **traceability**: 溯源码
+    - **traceability_field_type**: 字段类型, id: 溯源id, code: 溯源码, 默认为code
     - **plan_id**: 计划id, 可选
     - **year**: 年份, 可选
     - **batch**: 批次, 可选
@@ -72,8 +76,12 @@ async def get_traceability(
             query = (
                 db.query(Traceability)
                 .join(Plan, Traceability.plan_id == Plan.id)
-                .join(Location, Plan.location_id == Location.id)
+                .outerjoin(Location, Plan.location_id == Location.id)
             )
+            if traceability_field_type == "id":
+                query = query.filter(Traceability.id == traceability)
+            else:
+                query = query.filter(Traceability.traceability_code == traceability)
             if plan_id:
                 query = query.filter(Traceability.plan_id == plan_id)
             if year:
@@ -95,7 +103,7 @@ async def get_traceability(
             data = []
 
             for item in objs:
-                url = f"/traceability/detail?code={item.traceability_code}"
+                url = f"/traceability/detail?traceability={item.traceability_code}&field_type=code"
                 data.append(
                     {
                         "id": item.id,

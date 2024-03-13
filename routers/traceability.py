@@ -45,7 +45,7 @@ def datetime_to_str(obj):
     summary="批量获取溯源信息",
 )
 async def get_traceability(
-    traceability: str = Query(..., description="溯源码标识"),
+    traceability: str = Query(None, description="溯源码标识"),
     traceability_field_type: Literal["id", "code"] = Query("code", description="字段类型"),
     plan_id: Optional[int] = Query(None, description="计划id"),
     year: Optional[int] = Query(None, description="年份"),
@@ -78,10 +78,11 @@ async def get_traceability(
                 .join(Plan, Traceability.plan_id == Plan.id)
                 .outerjoin(Location, Plan.location_id == Location.id)
             )
-            if traceability_field_type == "id":
-                query = query.filter(Traceability.id == traceability)
-            else:
-                query = query.filter(Traceability.traceability_code == traceability)
+            if traceability:
+                if traceability_field_type == "id":
+                    query = query.filter(Traceability.id == traceability)
+                else:
+                    query = query.filter(Traceability.traceability_code == traceability)
             if plan_id:
                 query = query.filter(Traceability.plan_id == plan_id)
             if year:

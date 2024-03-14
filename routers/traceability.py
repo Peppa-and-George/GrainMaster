@@ -1,4 +1,5 @@
 import io
+import typing
 import uuid
 from datetime import datetime
 from typing import Optional, Literal, Union
@@ -32,6 +33,13 @@ from config import BASE_URL
 
 traceability_router = APIRouter()
 detail_router = APIRouter()
+
+
+def try_or_none(func: typing.Callable, default=None):
+    try:
+        return func()
+    except:
+        return default
 
 
 def datetime_to_str(obj):
@@ -110,10 +118,10 @@ async def get_traceability(
                         "id": item.id,
                         "plan_id": item.plan.id,
                         "traceability_code": item.traceability_code,
-                        "location_id": item.plan.location_id,
-                        "location_name": item.plan.location.name,
-                        "year": item.plan.year,
-                        "batch": item.plan.batch,
+                        "location_id": try_or_none(lambda: item.plan.location.id),
+                        "location_name": try_or_none(lambda: item.plan.location.name),
+                        "year": try_or_none(lambda: item.plan.year),
+                        "batch": try_or_none(lambda: item.plan.batch),
                         "url": url,
                         "print_status": item.print_status,
                         "used_time": datetime_to_str(item.used_time),
@@ -200,19 +208,29 @@ async def get_traceability_detail(
                 "id": obj.id,
                 "plan_id": obj.plan.id,
                 "traceability_code": obj.traceability_code,
-                "location_id": obj.plan.location_id,
+                "location_id": try_or_none(lambda: obj.plan.location.id),
                 "print_status": obj.print_status,
                 "used_time": datetime_to_str(obj.used_time),
                 "used": obj.used,
                 "scan_number": obj.scan_number,
                 "created_time": datetime_to_str(obj.create_time),
                 "updated_time": datetime_to_str(obj.update_time),
-                "location": transform_schema(LocationSchema, location)[0],
-                "plan": transform_schema(PlanSchema, plan)[0],
-                "plants": transform_schema(SegmentPlanSchema, plants),
-                "transports": transform_schema(TransportSchema, transports),
-                "warehouses": transform_schema(WarehouseSchema, warehouses),
-                "logistics": transform_schema(LogisticsPlanSchema, logistics),
+                "location": try_or_none(
+                    lambda: transform_schema(LocationSchema, location)[0], {}
+                ),
+                "plan": try_or_none(lambda: transform_schema(PlanSchema, plan)[0], {}),
+                "plants": try_or_none(
+                    lambda: transform_schema(SegmentPlanSchema, plants), []
+                ),
+                "transports": try_or_none(
+                    lambda: transform_schema(TransportSchema, transports), []
+                ),
+                "warehouses": try_or_none(
+                    lambda: transform_schema(WarehouseSchema, warehouses), []
+                ),
+                "logistics": try_or_none(
+                    lambda: transform_schema(LogisticsPlanSchema, logistics), []
+                ),
             }
 
             return JSONResponse(

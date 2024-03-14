@@ -382,11 +382,11 @@ async def upload_file(
     segment_plan_id: int = Form(..., description="种植环节计划id"),
     operate: Union[int, str] = Form(..., description="操作标识"),
     operate_field_type: Literal["id", "name"] = Form("id", description="操作字段类型"),
-    image: Optional[UploadFile] = File(
+    image: UploadFile = File(
         None,
         description="图片文件",
     ),
-    video: Optional[UploadFile] = File(None, description="视频文件"),
+    video: UploadFile = File(None, description="视频文件"),
     operator_name: Optional[str] = Form(None, description="操作人名称"),
     operate_time: str = Form(
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

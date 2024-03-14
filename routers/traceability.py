@@ -45,7 +45,7 @@ def datetime_to_str(obj):
     summary="批量获取溯源信息",
 )
 async def get_traceability(
-    traceability: str = Query(None, description="溯源码标识"),
+    traceability: Union[str, int] = Query(None, description="溯源码标识"),
     traceability_field_type: Literal["id", "code"] = Query("code", description="字段类型"),
     plan_id: Optional[int] = Query(None, description="计划id"),
     year: Optional[int] = Query(None, description="年份"),

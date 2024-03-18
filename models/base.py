@@ -468,6 +468,10 @@ class OrderSchema(OrderBaseSchema):
     )
 
 
+class OrderSchemaWithProduct(OrderBaseSchema):
+    product: Optional[ProductBaseSchema] = Field(description="产品信息", default={})
+
+
 class LogisticsPlanBaseSchema(BaseModel):
     id: int = Field(description="物流计划ID")
     plan_id: Optional[int] = Field(description="计划ID")
@@ -492,7 +496,7 @@ class LogisticsPlanBaseSchema(BaseModel):
 
 class LogisticsPlanSchema(LogisticsPlanBaseSchema):
     address: Optional[AddressBaseSchema] = Field(description="地址信息", default={})
-    order: Optional[OrderBaseSchema] = Field(description="订单信息", default={})
+    order: Optional[OrderSchemaWithProduct] = Field(description="订单信息", default={})
     plan: Optional[PlanBaseSchema] = Field(description="计划信息", default={})
     client: Optional[ClientBaseSchema] = Field(description="客户信息", default={})
 

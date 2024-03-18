@@ -451,6 +451,7 @@ async def update_logistics(
                         status_code=status.HTTP_200_OK,
                         content={"code": 1, "message": "地址不存在"},
                     )
+                logistics.address = address
             # 验证发货数量
             if amount:
                 amount_info = get_amount_info(logistics.order_id, "id")
@@ -464,6 +465,7 @@ async def update_logistics(
                             + logistics.amount,
                         },
                     )
+                logistics.amount = amount
             if operate_time:
                 logistics.operate_time = datetime.strptime(
                     operate_time, "%Y-%m-%d %H:%M:%S"

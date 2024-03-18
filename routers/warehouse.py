@@ -287,6 +287,9 @@ async def add_warehouse(
     order_field_type: Literal["id", "num"] = Body("id", description="订单字段类型"),
     product: Union[str, int] = Body(..., description="产品名称", examples=["大豆油", "花生油"]),
     product_field_type: Literal["id", "name"] = Body("name", description="产品字段类型"),
+    operate_time: Optional[str] = Body(
+        None, description="操作时间", examples=["2021-08-01 12:00:00"]
+    ),
     amount: int = Body(..., description="加工数量", ge=8, examples=[8, 17]),
     remarks: Optional[str] = Body(None, description="备注"),
     notify: Optional[bool] = Body(False, description="是否通知客户"),
@@ -298,6 +301,7 @@ async def add_warehouse(
     - **order_field_type**: 订单字段类型, 可选, 默认id, 可选值：id | num
     - **product**: 产品名称, int | str, 必选
     - **product_field_type**: 产品字段类型, 可选, 默认name, 可选值：id | name
+    - **operate_time**: 操作时间, 可选, 例子：2021-08-01 12:00:00
     - **amount**: 加工数量, int, 必选, 大于8
     - **remarks**: 备注, 可选
     - **notify**: 是否通知客户, 可选
@@ -315,11 +319,7 @@ async def add_warehouse(
             )
 
         # 验证加工数量
-        completed_warehouse = (
-            db.query(Warehouse)
-            .filter(Warehouse.order_id == order_obj.id, Warehouse.status == "加工完成")
-            .all()
-        )
+        completed_warehouse = db.query(Warehouse).filter_by(order_id=order_obj.id).all()
         completed_amount = sum([i.amount for i in completed_warehouse])
         if amount > order_obj.total_amount - completed_amount:
             return JSONResponse(
@@ -342,10 +342,11 @@ async def add_warehouse(
             remarks=remarks,
             status="准备加工",
             amount=amount,
+            operate_time=datetime.strptime(operate_time, "%Y-%m-%d %H:%M:%S"),
+            order_id=order_obj.id,
         )
         warehouse.plan = order_obj.plan
         warehouse.product = product_obj
-        warehouse.order = order_obj
 
         # 添加质检报告记录
         quality = Quality(
@@ -362,11 +363,9 @@ async def add_warehouse(
                 type=segment,
             )
             warehouse.processing_segments.append(processing_segment)
-
         db.add(warehouse)
-        db.flush()
-        db.refresh(warehouse)
         db.commit()
+        db.refresh(warehouse)
 
         if notify:
             # 发送消息通知

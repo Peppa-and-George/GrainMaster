@@ -173,9 +173,11 @@ async def get_logistics(
     year: int = Query(None, description="年份"),
     batch: int = Query(None, description="批次"),
     location_name: str = Query(None, description="基地名称"),
+    order: Union[str, int, None] = Query(None, description="订单标识"),
+    order_field_type: Literal["id", "num"] = Query("id", description="订单标识类型"),
     page: int = Query(1, description="页码"),
     page_size: int = Query(10, description="每页数量"),
-    order: Literal["asc", "desc"] = Query("asc", description="排序"),
+    order_by: Literal["asc", "desc"] = Query("asc", description="排序"),
     order_field: str = Query("id", description="排序字段"),
 ):
     """
@@ -206,12 +208,18 @@ async def get_logistics(
                         content={"code": 1, "message": "位置不存在"},
                     )
                 query = query.filter(Plan.location_id == location.id)
+            if order:
+                query = query.join(Order, Order.id == LogisticsPlan.order_id)
+                if order_field_type == "id":
+                    query = query.filter(Order.id == order)
+                else:
+                    query = query.filter(Order.order_number == order)
             response = page_with_order(
                 schema=LogisticsPlanSchema,
                 query=query,
                 page=page,
                 page_size=page_size,
-                order=order,
+                order=order_by,
                 order_field=order_field,
             )
             return JSONResponse(status_code=status.HTTP_200_OK, content=response)

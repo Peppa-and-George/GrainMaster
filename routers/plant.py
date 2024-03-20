@@ -35,6 +35,7 @@ from models.base import (
     SegmentSchema,
     SegmentPlanSchema,
     OperationImplementBaseSchema,
+    OperationImplementSchema,
 )
 
 plant_router = APIRouter()
@@ -86,7 +87,7 @@ async def get_operation_implementation(
             else:
                 query = query.filter(PlantOperate.name == operation)
         response = page_with_order(
-            schema=OperationImplementBaseSchema,
+            schema=OperationImplementSchema,
             query=query,
             page_size=page_size,
             page=page,
@@ -310,7 +311,7 @@ async def add_segment_plan(
             for order in orders:
                 add_message(
                     title="添加种植计划",
-                    content=f"{operator.name}添加了一个种植计划，操作时间：{operate_time}，备注：{remark}，环节：{segment.name}",
+                    content=f"添加了一个种植计划，操作时间：{operate_time}，计划操作人：{operator.name}备注：{remark}，环节：{segment.name}",
                     receiver_id=order[0],
                     sender="系统",
                     message_type="添加种植计划",
@@ -471,11 +472,11 @@ async def upload_file(
 
             for order in orders:
                 add_message(
-                    title="田间种植操作视频上传",
-                    content=f"{operator_name}上传了一个操作视频，操作时间：{operate_time}，备注：{remarks}，环节：{implementation.segment_plan.segment.name}，操作：{implementation.operation.name}",
+                    title="田间种植实施环节更新",
+                    content=f"田间种植实施环节更新，操作时间：{operate_time}，备注：{remarks if remarks else '空'}，环节：{implementation.segment_plan.segment.name}，操作：{implementation.operation.name}",
                     receiver_id=order[0],
                     sender="系统",
-                    message_type="操作视频上传",
+                    message_type="实施环节更新",
                     details=json.dumps(
                         transform_schema(OperationImplementBaseSchema, implementation)
                     ),
@@ -484,7 +485,7 @@ async def upload_file(
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"code": 0, "message": "上传成功"},
+            content={"code": 0, "message": "田间种植实施环节更新成功"},
         )
 
 

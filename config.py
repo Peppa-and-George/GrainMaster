@@ -22,4 +22,4 @@ if not os.path.exists(FILE_DIR):
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = r"upload/images"
 
-BASE_URL = "https://13.215.201.101:8080"
+BASE_URL = "https://api.newshineoil.com:60025"

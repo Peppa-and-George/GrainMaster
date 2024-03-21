@@ -10,6 +10,7 @@ from fastapi.routing import APIRouter
 from fastapi import Query, status, HTTPException, Body, Depends
 from fastapi.responses import JSONResponse, Response, FileResponse
 
+from config import PROJECT_DIR
 from models.base import (
     LocationSchema,
     TransportSchema,
@@ -50,7 +51,7 @@ def datetime_to_str(obj):
 
 @traceability_router.get("/NWPgncjXcE.txt")
 def get_file_api():
-    return FileResponse("../NWPgncjXcE.txt")
+    return FileResponse(f"{PROJECT_DIR}/NWPgncjXcE.txt")
 
 
 @traceability_router.get(

@@ -8,7 +8,7 @@ import qrcode
 
 from fastapi.routing import APIRouter
 from fastapi import Query, status, HTTPException, Body, Depends
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
 
 from models.base import (
     LocationSchema,
@@ -46,6 +46,11 @@ def datetime_to_str(obj):
     if obj:
         return datetime.strftime(obj, "%Y-%m-%d %H:%M:%S")
     return None
+
+
+@traceability_router.get("/NWPgncjXcE.txt")
+def get_file_api():
+    return FileResponse("../NWPgncjXcE.txt")
 
 
 @traceability_router.get(

@@ -33,6 +33,7 @@ from schema.common import query_with_page, query_with_order, transform_schema
 from config import BASE_URL
 
 traceability_router = APIRouter()
+no_auth_router = APIRouter()
 detail_router = APIRouter()
 
 
@@ -49,7 +50,7 @@ def datetime_to_str(obj):
     return None
 
 
-@traceability_router.get("/NWPgncjXcE.txt")
+@no_auth_router.get("/NWPgncjXcE.txt")
 def get_file_api():
     return FileResponse(f"{PROJECT_DIR}/NWPgncjXcE.txt")
 

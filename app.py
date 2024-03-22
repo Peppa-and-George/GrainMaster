@@ -49,14 +49,17 @@ from auth import (
     ALGORITHM,
     verify_password,
 )
-from config import IMAGE_DIR, VIDEOS_DIR, REPORT_DIR, FILE_DIR
+from config import VIDEOS_DIR, REPORT_DIR, FILE_DIR, IMAGES_DER
 from schema.database import SessionLocal
 from schema.tables import User, ClientUser
+from init import init
+
+init()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 
 app = FastAPI(title="backend", version="1.0.0")
-app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
+app.mount("/images", StaticFiles(directory=IMAGES_DER), name="images")
 app.mount("/videos", StaticFiles(directory=VIDEOS_DIR), name="videos")
 app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 app.mount("/files", StaticFiles(directory=FILE_DIR), name="files")

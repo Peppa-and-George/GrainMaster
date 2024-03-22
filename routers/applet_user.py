@@ -8,13 +8,12 @@ from fastapi import status, Body, Request, UploadFile, File, Depends
 from jose import JWTError, ExpiredSignatureError
 
 from auth import (
-    get_password_hash,
     get_user_by_request,
     get_base64_password,
 )
 from dependency.image import save_upload_image, delete_image
 from schema.database import SessionLocal
-
+from config import DEFAULT_AVATAR
 from schema.tables import Client, ClientUser
 
 no_auth_router = APIRouter()
@@ -69,6 +68,7 @@ async def register(
             type=client.type if client else None,
             phone_number=phone_number,
             client_id=client.id if client else None,
+            avatar=DEFAULT_AVATAR,
         )
         db.add(user)
         db.commit()

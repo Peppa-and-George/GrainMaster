@@ -1,11 +1,15 @@
+import base64
 import sys
 import time
 import traceback
 from datetime import timedelta
+from typing import Literal
 
-from fastapi import FastAPI, Response, Request, Depends, HTTPException, status
+from fastapi import FastAPI, Response, Request, Depends, HTTPException, status, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+
 from models.base import Token
 from routers.user import router as user_router
 from routers.product import product_router
@@ -32,6 +36,9 @@ from routers.apply import apply_router
 from routers.message import message_router
 from routers.todo_list import todo_list_router
 from routers.traceability import detail_router
+from routers.traceability import no_auth_router as traceability_no_auth
+from routers.applet_user import auth_router as applet_user_auth_router
+from routers.applet_user import no_auth_router as applet_user_no_auth_router
 from journal import log
 from auth import (
     jwt,
@@ -44,7 +51,7 @@ from auth import (
 )
 from config import IMAGE_DIR, VIDEOS_DIR, REPORT_DIR, FILE_DIR
 from schema.database import SessionLocal
-from schema.tables import User
+from schema.tables import User, ClientUser
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="get_access_token")
 
@@ -55,6 +62,17 @@ app.mount("/reports", StaticFiles(directory=REPORT_DIR), name="reports")
 app.mount("/files", StaticFiles(directory=FILE_DIR), name="files")
 app.include_router(
     user_router, tags=["系统管理"], prefix="/user", dependencies=[Depends(oauth2_scheme)]
+)
+app.include_router(
+    applet_user_auth_router,
+    tags=["小程序用户管理"],
+    prefix="/applet_user",
+    dependencies=[Depends(oauth2_scheme)],
+)
+app.include_router(
+    applet_user_no_auth_router,
+    tags=["小程序用户管理"],
+    prefix="/applet_user",
 )
 app.include_router(
     statistic_router,
@@ -163,6 +181,12 @@ app.include_router(
     prefix="/traceability",
     dependencies=[Depends(oauth2_scheme)],
 )
+app.include_router(
+    traceability_no_auth,
+    tags=["溯源管理"],
+    prefix="/traceability",
+)
+
 
 app.include_router(
     detail_router,
@@ -255,22 +279,51 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):  # 验证token
 
 
 @app.post("/get_access_token", response_model=Token, description="获取token", tags=["认证"])
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(
+    username: str = Form(..., description="username"),
+    password: str = Form(..., description="password"),
+    b64encoded: bool = Form(False, description="是否base64编码"),
+    username_type: Literal["name", "phone_number"] = Form("name", description="用户名类型"),
+):
     with SessionLocal() as db:
-        user = db.query(User).filter(User.name == form_data.username).first()
-        if not verify_password(form_data.password, user.hashed_passwd):
+        if b64encoded:
+            password = base64.b64decode(password).decode()
+        if username_type == "name":
+            user = db.query(User).filter(User.name == username).first()
+        else:
+            user = (
+                db.query(ClientUser).filter(ClientUser.phone_number == username).first()
+            )
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="user not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if not verify_password(password, user.hashed_passwd):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        data = {
+            "id": user.id,
+            "phone_number": user.phone_number,
+            "username": user.name,
+            "type": user.type if username_type == "phone_number" else None,
+            "avatar": user.avatar if username_type == "phone_number" else None,
+        }
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.name, "phone_number": user.phone_number, "id": user.id},
+            data={"sub": user.name, **data},
             expires_delta=access_token_expires,
         )
-        return {"access_token": access_token, "token_type": "bearer"}
+        return JSONResponse(
+            content={"access_token": access_token, "token_type": "bearer", **data},
+            status_code=status.HTTP_200_OK,
+        )
 
 
 def runserver(workers):

@@ -258,6 +258,9 @@ class Client(Base):
     todo_lists: Mapped[List["TodoList"]] = relationship(
         "TodoList", back_populates="sender"
     )
+    client_users: Mapped["ClientUser"] = relationship(
+        "ClientUser", back_populates="client"
+    )
 
 
 class ClientPrivilege(Base):
@@ -1202,4 +1205,31 @@ class TodoList(Base):
 
     sender: Mapped["Client"] = relationship(
         "Client", back_populates="todo_lists", foreign_keys=[sender_id]
+    )
+
+
+class ClientUser(Base):
+    __tablename__ = "client_user"  # noqa
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    client_id = Column(ForeignKey("client.id"), nullable=True, comment="客户")
+    name = Column(String(16), comment="姓名", name="name")
+    hashed_passwd = Column(String(256), comment="密码", name="hashed_passwd")
+    phone_number = Column(String(16), comment="手机号", name="phone_number", unique=True)
+    avatar = Column(String(64), comment="头像", name="avatar")
+    type: Literal["定制", "非定制"] = Column(
+        Enum("定制", "非定制"), comment="类型", name="type", default="非定制"
+    )
+    create_time = Column(
+        DateTime, default=datetime.now, comment="创建时间", name="create_time"
+    )
+    update_time = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now,
+        comment="更新时间",
+        name="update_time",
+    )
+
+    client: Mapped["Client"] = relationship(
+        "Client", back_populates="client_users", foreign_keys=[client_id]
     )

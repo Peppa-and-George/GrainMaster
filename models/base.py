@@ -819,3 +819,25 @@ class TodoListBaseSchema(BaseModel):
 
 class TodoListSchema(TodoListBaseSchema):
     sender: Optional[ClientBaseSchema] = Field(description="发送者信息", default={})
+
+
+class ClientUserBaseSchema(BaseModel):
+    id: int = Field(description="用户ID")
+    client_id: Optional[int] = Field(description="客户ID")
+    name: Optional[str] = Field(description="用户名")
+    hashed_passwd: Optional[str] = Field(description="密码")
+    phone_number: Optional[str] = Field(description="手机号")
+    avatar: Optional[str] = Field(description="头像")
+    type: Optional[str] = Field(description="用户类型")
+    create_time: Optional[datetime] = Field(description="创建时间")
+    update_time: Optional[datetime] = Field(description="更新时间")
+
+    @field_serializer("create_time", "update_time")
+    def format_time(self, v: Any) -> Any:
+        return v.strftime("%Y-%m-%d %H:%M:%S") if v else ""
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ClientUserSchema(ClientUserBaseSchema):
+    client: Optional[ClientBaseSchema] = Field(description="客户信息", default={})

@@ -1,5 +1,6 @@
 import base64
 from typing import Optional
+import re
 
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
@@ -20,6 +21,12 @@ no_auth_router = APIRouter()
 auth_router = APIRouter()
 
 
+def verify_phone_number(phone_number: str) -> bool:
+    if re.match(r"^1[3-9]\d{9}$", phone_number):
+        return True
+    return False
+
+
 @no_auth_router.post("/register", summary="注册用户")
 async def register(
     phone_number: str = Body(..., description="手机号", embed=True),
@@ -36,6 +43,12 @@ async def register(
     - b64encoded: bool, 是否对密码进行base64编码, 可选参数，默认为False
     """
     with SessionLocal() as db:
+        if not verify_phone_number(phone_number):
+            return JSONResponse(
+                content={"code": 1, "message": "手机号格式错误"},
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
         if b64encoded:
             password = base64.b64decode(password).decode()
         user = (
@@ -128,6 +141,11 @@ async def update_info(
         if name:
             user.name = name
         if phone_number:
+            if not verify_phone_number(phone_number):
+                return JSONResponse(
+                    content={"code": 1, "message": "手机号格式错误"},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
             user.phone_number = phone_number
         if password:
             if b64encoded:

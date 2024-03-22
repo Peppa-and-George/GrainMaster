@@ -169,6 +169,11 @@ async def upload_avatar(
                 content={"code": 1, "message": "身份验证错误, 请重新登录"},
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
+        if not current_user.get("type"):
+            return JSONResponse(
+                content={"code": 1, "message": "用户类型错误, 该操作仅限于客户端用户"},
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
         user = (
             db.query(ClientUser).filter(ClientUser.id == current_user.get("id")).first()

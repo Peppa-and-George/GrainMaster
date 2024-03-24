@@ -5,6 +5,7 @@ from typing import Literal, Union, Optional
 
 from fastapi import APIRouter, HTTPException, status, Query, Body
 from fastapi.responses import JSONResponse
+from sqlalchemy import or_
 
 from models.base import PrivilegeSchema, ClientPrivilegeRelationSchema
 from routers.message import add_message
@@ -98,8 +99,9 @@ async def get_privilege_client_relationship(
     client: Optional[str] = Query(None, description="客户标识"),
     client_file_type: Literal["name", "id"] = Query("id", description="客户标识类型"),
     expired: Optional[bool] = Query(None, description="是否过期"),
-    use_status: Optional[Literal["unused", "partially_used", "used_up"]] = Query(
-        None, description="使用状态, unused: 未使用, partially_used: 部分使用, used_up: 已使用完"
+    use_status: Optional[str] = Query(
+        None,
+        description="使用状态, unused: 未使用, partially_used: 部分使用, used_up: 已使用完, 多个状态用英文逗号隔开",
     ),
     privilege_number: Optional[str] = Query(None, description="权益编号"),
     privilege_name: Optional[str] = Query(None, description="权益名称"),
@@ -115,7 +117,7 @@ async def get_privilege_client_relationship(
     - client: 客户标识, 选填
     - client_file_type: 客户标识类型, 可选值: name, id
     - expired: 是否过期, 选填, 默认不限
-    - use_status: 使用状态, 选填, 默认不限, 可选值: unused, partially_used, used_up
+    - use_status: 使用状态, 选填, 默认不限, 可选值: unused, partially_used, used_up, 多个状态用英文逗号隔开
     - privilege_number: 权益编号, 选填
     - privilege_name: 权益名称, 选填
     - start_time: 开始时间, 选填
@@ -140,22 +142,7 @@ async def get_privilege_client_relationship(
                     query = query.filter(Privilege.expired_time > datetime.now())
                 else:
                     query = query.filter(Privilege.expired_time < datetime.now())
-            if use_status:
-                if use_status == "unused":
-                    query = query.filter(
-                        ClientPrivilege.used_amount == 0,
-                        ClientPrivilege.amount == ClientPrivilege.unused_amount,
-                    )
-                elif use_status == "partially_used":
-                    query = query.filter(
-                        ClientPrivilege.unused_amount > 0,
-                        ClientPrivilege.unused_amount < ClientPrivilege.amount,
-                    )
-                else:
-                    query = query.filter(
-                        ClientPrivilege.unused_amount == 0,
-                        ClientPrivilege.amount == ClientPrivilege.used_amount,
-                    )
+
             if privilege_number or privilege_name:
                 query = query.join(Privilege)
             if privilege_number:
@@ -172,6 +159,21 @@ async def get_privilege_client_relationship(
                     ClientPrivilege.expired_date
                     <= datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
                 )
+
+            if use_status:
+                status_items = use_status.split(",")
+                if "unused" not in status_items:
+                    query = query.filter(ClientPrivilege.used_amount > 0)
+                if "used_up" not in status_items:
+                    query = query.filter(ClientPrivilege.unused_amount > 0)
+                if "partially_used" not in status_items:
+                    query = query.filter(
+                        or_(
+                            ClientPrivilege.used_amount == ClientPrivilege.amount,
+                            ClientPrivilege.unused_amount == ClientPrivilege.amount,
+                        )
+                    )
+
             data = page_with_order(
                 schema=ClientPrivilegeRelationSchema,
                 query=query,

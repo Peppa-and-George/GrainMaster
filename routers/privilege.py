@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import datetime
 from typing import Literal, Union, Optional
@@ -6,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status, Query, Body
 from fastapi.responses import JSONResponse
 
 from models.base import PrivilegeSchema, ClientPrivilegeRelationSchema
+from routers.message import add_message
 from schema.tables import Privilege, Client, ClientPrivilege, PrivilegeUsage
 from schema.common import page_with_order, transform_schema
 from schema.database import SessionLocal
@@ -127,15 +129,17 @@ async def get_privilege_client_relationship(
         with SessionLocal() as db:
             query = db.query(ClientPrivilege)
             if client:
+                query = query.join(Client)
                 if client_file_type == "name":
-                    query = query.join(Client).filter(Client.name == client)
+                    query = query.filter(Client.name == client)
                 else:
                     query = query.filter(Client.id == client)
             if expired is not None:
+                query = query.join(Privilege)
                 if expired:
-                    query = query.filter(ClientPrivilege.expired_date > datetime.now())
+                    query = query.filter(Privilege.expired_time > datetime.now())
                 else:
-                    query = query.filter(ClientPrivilege.expired_date < datetime.now())
+                    query = query.filter(Privilege.expired_time < datetime.now())
             if use_status:
                 if use_status == "unused":
                     query = query.filter(
@@ -248,6 +252,7 @@ async def add_privilege_client_relationship(
         None, description="过期时间", examples=["2021-12-31 23:59:59"]
     ),
     amount: int = Body(1, description="数量", examples=[1]),
+    notify: bool = Body(False, description="是否通知客户"),
 ):
     """
     # 给客户添加权益
@@ -259,6 +264,7 @@ async def add_privilege_client_relationship(
     - effective_time: 生效时间
     - expired_date: 过期时间
     - amount: 数量, 选填, 默认1
+    - notify: 是否通知客户, 选填, 默认False
     """
     try:
         with SessionLocal() as db:
@@ -294,11 +300,16 @@ async def add_privilege_client_relationship(
                     expired_time=datetime.strptime(expired_date, "%Y-%m-%d %H:%M:%S"),
                 )
             clients = clients.split(",")
+            response_data = []
             for client in clients:
                 if field_type == "name":
-                    client_obj = db.query(Client).filter(Client.name == client).first()
+                    client_obj = (
+                        db.query(Client).filter(Client.name == str(client)).first()
+                    )
                 else:
-                    client_obj = db.query(Client).filter(Client.id == client).first()
+                    client_obj = (
+                        db.query(Client).filter(Client.id == int(client)).first()
+                    )
                 if not client:
                     return JSONResponse(
                         status_code=status.HTTP_200_OK,
@@ -325,17 +336,34 @@ async def add_privilege_client_relationship(
                     client_privilege.privilege = privilege
                     client_privilege.client = client_obj
                     db.add(client_privilege)
-                db.flush()
-                db.refresh(client_privilege)
-            db.commit()
+                    db.commit()
+                    db.flush()
+                    db.refresh(client_privilege)
+
+                # 通知客户
+                if notify:
+                    add_message(
+                        title="权益通知",
+                        content=f"您已获得{privilege.name}权益, 数量:{amount}",
+                        sender="系统",
+                        receiver_id=client_obj.id,
+                        message_type="privilege",
+                        tag=5,
+                        details=json.dumps(
+                            transform_schema(
+                                ClientPrivilegeRelationSchema, client_privilege
+                            )
+                        ),
+                    )
+                response_data.extend(
+                    transform_schema(ClientPrivilegeRelationSchema, client_privilege)
+                )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "code": 0,
                 "message": "添加成功",
-                "data": transform_schema(
-                    ClientPrivilegeRelationSchema, client_privilege
-                ),
+                "data": response_data,
             },
         )
     except Exception as e:
@@ -350,6 +378,7 @@ async def add_privilege_to_client_by_id(
     field_type: Literal["name", "id"] = Body("id", description="客户标识类型"),
     privilege_id: int = Body(..., description="权益ID"),
     amount: int = Body(1, description="数量", examples=[1]),
+    notify: bool = Body(False, description="是否通知客户"),
 ):
     """
     # 给客户添加权益
@@ -357,6 +386,7 @@ async def add_privilege_to_client_by_id(
     - field_type: 客户标识类型, 可选值: name, id
     - privilege_id: 权益ID
     - amount: 数量, 选填, 默认1
+    - notify: 是否通知客户, 选填, 默认False
     """
     try:
         with SessionLocal() as db:
@@ -368,6 +398,7 @@ async def add_privilege_to_client_by_id(
                 )
 
             clients = clients.split(",")
+            response_data = []
             for client in clients:
                 if field_type == "name":
                     client_obj = db.query(Client).filter(Client.name == client).first()
@@ -400,17 +431,35 @@ async def add_privilege_to_client_by_id(
                     client_privilege.privilege = privilege
                     client_privilege.client = client_obj
                     db.add(client_privilege)
-                db.flush()
-                db.refresh(client_privilege)
-                db.commit()
+                    db.commit()
+                    db.flush()
+                    db.refresh(client_privilege)
+
+                # 通知客户
+                if notify:
+                    add_message(
+                        title="权益通知",
+                        content=f"您已获得{privilege.name}权益, 数量:{amount}",
+                        sender="系统",
+                        receiver_id=client_obj.id,
+                        message_type="privilege",
+                        tag=5,
+                        details=json.dumps(
+                            transform_schema(
+                                ClientPrivilegeRelationSchema, client_privilege
+                            )
+                        ),
+                    )
+
+                response_data.extend(
+                    transform_schema(ClientPrivilegeRelationSchema, client_privilege)
+                )
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "code": 0,
                 "message": "添加成功",
-                "data": transform_schema(
-                    ClientPrivilegeRelationSchema, client_privilege
-                ),
+                "data": response_data,
             },
         )
     except Exception as e:

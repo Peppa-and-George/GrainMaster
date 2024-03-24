@@ -435,6 +435,9 @@ class WarehouseSchema(WarehouseBaseSchema):
     qualities: Optional[List["QualityBaseSchema"]] = Field(
         description="质检报告信息", default=[]
     )
+    processing_segments: Optional[List["ProcessingSegmentBaseSchema"]] = Field(
+        description="加工环节信息", default=[]
+    )
 
 
 class OrderBaseSchema(BaseModel):
@@ -534,7 +537,7 @@ class QualityBaseSchema(BaseModel):
     name: Optional[str] = Field(description="质检报告名称")
     people: Optional[str] = Field(description="质检人员", default=None)
     status: Optional[str] = Field(description="质检状态", default=None)
-    report_url: Optional[str] = Field(description="质检报告地址", default=None)
+    report: Optional[str] = Field(description="质检报告地址", default=None)
     upload_time: Optional[datetime] = Field(description="上传时间")
     create_time: Optional[datetime] = Field(description="创建时间")
     update_time: Optional[datetime] = Field(description="更新时间")

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from sqlalchemy import (
     Column,
@@ -1216,9 +1216,7 @@ class ClientUser(Base):
     hashed_passwd = Column(String(256), comment="密码", name="hashed_passwd")
     phone_number = Column(String(16), comment="手机号", name="phone_number", unique=True)
     avatar = Column(String(64), comment="头像", name="avatar")
-    type: Literal["定制", "非定制"] = Column(
-        Enum("定制", "非定制"), comment="类型", name="type", default="非定制"
-    )
+    type = Column(comment="类型", name="type", default="非定制")
     create_time = Column(
         DateTime, default=datetime.now, comment="创建时间", name="create_time"
     )

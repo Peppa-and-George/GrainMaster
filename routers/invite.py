@@ -7,6 +7,7 @@ import base64
 from datetime import datetime
 
 from models.base import InviteSchema
+from routers.todo_list import add_todo
 from schema.common import page_with_order, transform_schema
 from schema.tables import Invite, ClientPrivilege
 from schema.database import SessionLocal
@@ -87,11 +88,15 @@ async def get_invite(
 )
 async def create_invite(
     req: Request,
-    client_privilege_id: int = Query(..., description="客户权益ID", examples=[1]),
+    client_privilege_id: int = Query(
+        ..., description="客户权益ID", examples=[1], embed=True
+    ),
+    notify: bool = Query(False, description="是否通知", examples=[False], embed=True),
 ):
     """
     # 创建邀请
     - **client_privilege**: 客户权益, int, required
+    - **notify**: 是否通知, bool, optional, example: False
     """
     with SessionLocal() as db:
         client_privilege = (
@@ -120,9 +125,18 @@ async def create_invite(
         invite.invited_customer = client_privilege.client
         invite.client_privilege = client_privilege
         db.add(invite)
+        db.commit()
         db.flush()
         db.refresh(invite)
-        db.commit()
+
+        if notify:
+            add_todo(
+                title="权限使用申请",
+                content=f"您收到了来自{client_privilege.client.name}的权限是使用申请, 请及时处理, 申请时间: {datetime.strftime(invite.invite_time, '%Y-%m-%d %H:%M:%S')}, 权限名称: {client_privilege.privilege.name}",
+                sender=client_privilege.client.id,
+                sender_field_type="id",
+                tag=6,
+            )
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,

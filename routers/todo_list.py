@@ -15,6 +15,29 @@ from schema.database import SessionLocal
 todo_list_router = APIRouter()
 
 
+def add_todo(
+    title: str,
+    content: str,
+    sender: Union[str, int, None] = None,
+    sender_field_type: Literal["id", "name", "phone_number"] = "id",
+    tag: int = 9,
+):
+    with SessionLocal() as session:
+        if sender_field_type == "name":
+            sender = session.query(Client).filter(Client.name == sender).first()
+        elif sender_field_type == "phone_number":
+            sender = session.query(Client).filter(Client.phone_number == sender).first()
+        else:
+            sender = session.query(Client).filter(Client.id == sender).first()
+        todo_list = TodoList(title=title, content=content, tag=tag)
+        todo_list.sender = sender
+        session.add(todo_list)
+        session.commit()
+        session.flush()
+        session.refresh(todo_list)
+        return transform_schema(TodoListSchema, todo_list)
+
+
 @todo_list_router.post("/add_todo_list", summary="添加待办事项")
 async def add_todo_list(
     title: str = Body(..., description="待办事项标题"),
@@ -32,28 +55,21 @@ async def add_todo_list(
     - **sender**: 发送者, 非必填, str
     - **tag**: 标签, 必填, int, 1: 田间种植 2: 原料运输 3: 仓储加工 4: 物流运输 9: 普通消息
     """
-    with SessionLocal() as session:
-        if sender_field_type == "name":
-            sender = session.query(Client).filter(Client.name == sender).first()
-        elif sender_field_type == "phone_number":
-            sender = session.query(Client).filter(Client.phone_number == sender).first()
-        else:
-            sender = session.query(Client).filter(Client.id == sender).first()
-        todo_list = TodoList(title=title, content=content, tag=tag)
-        todo_list.sender = sender
-        session.add(todo_list)
-        session.flush()
-        session.refresh(todo_list)
-        session.commit()
-        session.refresh(todo_list)
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={
-                "code": 0,
-                "message": "添加成功",
-                "data": transform_schema(TodoListSchema, todo_list),
-            },
-        )
+    todo_list = add_todo(
+        title=title,
+        content=content,
+        sender=sender,
+        sender_field_type=sender_field_type,
+        tag=tag,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "code": 0,
+            "message": "添加成功",
+            "data": todo_list,
+        },
+    )
 
 
 @todo_list_router.get("/get_todo_list", summary="获取待办事项")

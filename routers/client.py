@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Literal
 import uuid
@@ -6,13 +7,20 @@ from fastapi import APIRouter, Query, HTTPException, status, Body, Request
 from fastapi.responses import JSONResponse
 
 from schema.common import page_with_order, query_with_page_and_order, transform_schema
-from schema.tables import Client, Address
+from schema.tables import Client, Address, ClientUser
 from schema.database import SessionLocal
 from models.base import ClientSchema, AddressSchema, OrderSchema
+from auth import get_base64_password
 
 from auth import decode_token
 
 client_router = APIRouter()
+
+
+def verify_phone_number(phone_number: str) -> bool:
+    if re.match(r"^1[3-9]\d{9}$", phone_number):
+        return True
+    return False
 
 
 @client_router.get("/get_clients", summary="获取客户列表")
@@ -180,6 +188,13 @@ async def add_client(
     - signing_phone: 签约人手机号, 可选
     - **activate**: 客户是否激活，bool类型
     """
+    # validate phone number
+    if not verify_phone_number(phone_number):
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"code": 1, "message": "手机号格式错误"},
+        )
+
     if signing_people is None or signing_phone is None:
         token = request.headers.get("Authorization")
         user_info = decode_token(token.replace("Bearer ", ""))
@@ -200,6 +215,20 @@ async def add_client(
                 region=region,
                 address=address,
             )
+            client_user = (
+                db.query(ClientUser)
+                .filter(ClientUser.phone_number == phone_number)
+                .first()
+            )
+            if not client_user:
+                client_user = ClientUser(
+                    name=name,
+                    phone_number=phone_number,
+                    hashed_passwd=get_base64_password(phone_number[-6:]),
+                    type=client_type,
+                    avatar="default.png",
+                )
+            client.client_user = client_user
             db.add(client)
             db.flush()
             db.refresh(client)

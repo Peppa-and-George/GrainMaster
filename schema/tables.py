@@ -258,7 +258,7 @@ class Client(Base):
     todo_lists: Mapped[List["TodoList"]] = relationship(
         "TodoList", back_populates="sender"
     )
-    client_users: Mapped["ClientUser"] = relationship(
+    client_user: Mapped["ClientUser"] = relationship(
         "ClientUser", back_populates="client"
     )
 
@@ -1231,5 +1231,5 @@ class ClientUser(Base):
     )
 
     client: Mapped["Client"] = relationship(
-        "Client", back_populates="client_users", foreign_keys=[client_id]
+        "Client", back_populates="client_user", foreign_keys=[client_id]
     )
